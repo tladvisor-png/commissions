@@ -1,0 +1,138 @@
+"use client"
+
+import { EncaissementKpiStats } from '@/types/commission'
+import { formatCurrency } from '@/lib/commission-calculations'
+import {
+  TrendingDown, CheckCircle, CreditCard, Clock, AlertCircle, Scale,
+} from 'lucide-react'
+
+interface EncaissementsKpiCardsProps {
+  stats: EncaissementKpiStats
+  onClickExpected: () => void
+  onClickPaid: () => void
+  onClickDelta: () => void
+  onClickPaidCount: () => void
+  onClickUnpaidCount: () => void
+  onClickVariance: () => void
+  monthLabel: string
+}
+
+interface KpiCardProps {
+  title: string
+  value: string
+  subtitle?: string
+  icon: React.ReactNode
+  color: string
+  bgColor: string
+  borderColor: string
+  onClick: () => void
+}
+
+function KpiCard({ title, value, subtitle, icon, color, bgColor, borderColor, onClick }: KpiCardProps) {
+  return (
+    <div
+      onClick={onClick}
+      className={`group relative bg-white rounded-xl border ${borderColor} shadow-sm p-5 flex items-start gap-4 overflow-hidden transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-[1.02]`}
+    >
+      <div className={`${bgColor} ${color} rounded-xl p-3 flex-shrink-0`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide truncate">{title}</p>
+        <p className="text-xl font-bold text-slate-800 mt-0.5 truncate">{value}</p>
+        {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+      </div>
+      <span className="absolute bottom-2 right-2.5 text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium select-none">
+        Voir détails →
+      </span>
+    </div>
+  )
+}
+
+export function EncaissementsKpiCards({
+  stats,
+  onClickExpected,
+  onClickPaid,
+  onClickDelta,
+  onClickPaidCount,
+  onClickUnpaidCount,
+  onClickVariance,
+  monthLabel,
+}: EncaissementsKpiCardsProps) {
+  const monthSubtitle = monthLabel ? `Sur ${monthLabel}` : 'Tous les mois'
+  const deltaPercent = stats.totalExpected > 0
+    ? Math.round((stats.totalDelta / stats.totalExpected) * 100)
+    : 0
+
+  return (
+    <div className="space-y-4">
+      {/* Ligne 1 : montants */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KpiCard
+          title="Surcommissions attendues"
+          value={formatCurrency(stats.totalExpected)}
+          subtitle={monthSubtitle}
+          icon={<CreditCard className="h-5 w-5" />}
+          color="text-blue-600"
+          bgColor="bg-blue-50"
+          borderColor="border-blue-100"
+          onClick={onClickExpected}
+        />
+        <KpiCard
+          title="Surcommissions payées"
+          value={formatCurrency(stats.totalPaid)}
+          subtitle={`${stats.paidCount} échéance${stats.paidCount > 1 ? 's' : ''} réglée${stats.paidCount > 1 ? 's' : ''}`}
+          icon={<CheckCircle className="h-5 w-5" />}
+          color={stats.totalPaid > 0 ? 'text-emerald-600' : 'text-slate-400'}
+          bgColor={stats.totalPaid > 0 ? 'bg-emerald-50' : 'bg-slate-50'}
+          borderColor={stats.totalPaid > 0 ? 'border-emerald-100' : 'border-slate-200'}
+          onClick={onClickPaid}
+        />
+        <KpiCard
+          title="Delta non payé"
+          value={formatCurrency(stats.totalDelta)}
+          subtitle={stats.totalDelta > 0 ? `${deltaPercent}% restant à encaisser` : 'Tout est encaissé'}
+          icon={<TrendingDown className="h-5 w-5" />}
+          color={stats.totalDelta > 0 ? 'text-orange-600' : 'text-emerald-600'}
+          bgColor={stats.totalDelta > 0 ? 'bg-orange-50' : 'bg-emerald-50'}
+          borderColor={stats.totalDelta > 0 ? 'border-orange-200' : 'border-emerald-100'}
+          onClick={onClickDelta}
+        />
+      </div>
+
+      {/* Ligne 2 : compteurs + écarts */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <KpiCard
+          title="Échéances payées"
+          value={String(stats.paidCount)}
+          subtitle="Confirmées"
+          icon={<CheckCircle className="h-5 w-5" />}
+          color={stats.paidCount > 0 ? 'text-emerald-600' : 'text-slate-400'}
+          bgColor={stats.paidCount > 0 ? 'bg-emerald-50' : 'bg-slate-50'}
+          borderColor={stats.paidCount > 0 ? 'border-emerald-100' : 'border-slate-200'}
+          onClick={onClickPaidCount}
+        />
+        <KpiCard
+          title="Échéances non payées"
+          value={String(stats.unpaidCount)}
+          subtitle={stats.unpaidCount > 0 ? 'En attente' : 'Toutes réglées'}
+          icon={<Clock className="h-5 w-5" />}
+          color={stats.unpaidCount > 0 ? 'text-orange-600' : 'text-slate-400'}
+          bgColor={stats.unpaidCount > 0 ? 'bg-orange-50' : 'bg-slate-50'}
+          borderColor={stats.unpaidCount > 0 ? 'border-orange-100' : 'border-slate-200'}
+          onClick={onClickUnpaidCount}
+        />
+        <KpiCard
+          title="Écarts de paiement"
+          value={formatCurrency(stats.totalVariance)}
+          subtitle={stats.totalVariance > 0 ? 'Différence attendu / payé' : 'Aucun écart'}
+          icon={<Scale className="h-5 w-5" />}
+          color={stats.totalVariance > 0 ? 'text-amber-600' : 'text-slate-400'}
+          bgColor={stats.totalVariance > 0 ? 'bg-amber-50' : 'bg-slate-50'}
+          borderColor={stats.totalVariance > 0 ? 'border-amber-100' : 'border-slate-200'}
+          onClick={onClickVariance}
+        />
+      </div>
+    </div>
+  )
+}
