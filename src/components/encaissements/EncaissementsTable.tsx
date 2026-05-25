@@ -18,7 +18,7 @@ import {
   AlertTriangle, CheckCircle, Clock, CalendarClock, MessageSquare,
   ChevronUp, ChevronDown, ChevronsUpDown,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Pencil, X, Check,
+  Pencil, X, Check, RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +27,8 @@ interface EncaissementsTableProps {
   onMarkPaid: (entry: EncaissementEntry) => void
   onEditPayment: (entry: EncaissementEntry) => void
   onCancelPayment: (entry: EncaissementEntry) => void
+  onDefer: (entry: EncaissementEntry) => void
+  onCancelDeferral: (entry: EncaissementEntry) => void
 }
 
 const columnHelper = createColumnHelper<EncaissementEntry>()
@@ -66,7 +68,7 @@ function getRowClass(entry: EncaissementEntry): string {
   return 'bg-white hover:bg-slate-50 border-l-4 border-l-transparent'
 }
 
-export function EncaissementsTable({ entries, onMarkPaid, onEditPayment, onCancelPayment }: EncaissementsTableProps) {
+export function EncaissementsTable({ entries, onMarkPaid, onEditPayment, onCancelPayment, onDefer, onCancelDeferral }: EncaissementsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'commissionMonthKey', desc: false }])
 
   const columns = [
@@ -190,10 +192,24 @@ export function EncaissementsTable({ entries, onMarkPaid, onEditPayment, onCance
       ),
     }),
     columnHelper.accessor('deferToEndOfMonth', {
-      header: 'Report',
+      header: 'FDM',
       cell: info => info.getValue() ? (
         <span title="Report fin de mois"><CalendarClock className="h-4 w-4 text-violet-500" /></span>
       ) : <span className="text-slate-300">—</span>,
+    }),
+    columnHelper.display({
+      id: 'deferralBadge',
+      header: 'Reportée',
+      cell: info => {
+        const entry = info.row.original
+        if (entry.deferredMonths <= 0) return <span className="text-slate-300">—</span>
+        return (
+          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-[10px] px-1.5 py-0 gap-0.5 whitespace-nowrap">
+            <CalendarClock className="h-2.5 w-2.5" />
+            +{entry.deferredMonths} mois
+          </Badge>
+        )
+      },
     }),
     columnHelper.accessor('needsUnepNegotiation', {
       header: 'UNEP',
@@ -213,17 +229,40 @@ export function EncaissementsTable({ entries, onMarkPaid, onEditPayment, onCance
       cell: info => {
         const entry = info.row.original
         return (
-          <div className="flex items-center gap-1 whitespace-nowrap">
+          <div className="flex items-center gap-1 whitespace-nowrap flex-wrap">
             {!entry.isPaid ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 gap-1"
-                onClick={() => onMarkPaid(entry)}
-              >
-                <Check className="h-3 w-3" />
-                Payer
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50 gap-1"
+                  onClick={() => onMarkPaid(entry)}
+                >
+                  <Check className="h-3 w-3" />
+                  Payer
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
+                  onClick={() => onDefer(entry)}
+                >
+                  <CalendarClock className="h-3 w-3" />
+                  Reporter
+                </Button>
+                {entry.deferredMonths > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 gap-1"
+                    onClick={() => onCancelDeferral(entry)}
+                    title="Annuler le report"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Annuler report
+                  </Button>
+                )}
+              </>
             ) : (
               <>
                 <Button
@@ -329,7 +368,7 @@ export function EncaissementsTable({ entries, onMarkPaid, onEditPayment, onCance
                   <span className="text-emerald-600">0,00 €</span>
                 )}
               </td>
-              <td colSpan={5}></td>
+              <td colSpan={6}></td>
             </tr>
           </tfoot>
         </table>

@@ -8,7 +8,7 @@ import {
   calculateEncaissementKpis,
   formatMonthLabel,
 } from '@/lib/commission-calculations'
-import { fetchDeals, updatePaymentStatus } from '@/lib/deals-service'
+import { fetchDeals, updatePaymentStatus, deferPaymentToNextMonth, cancelPaymentDeferral } from '@/lib/deals-service'
 import { NavigationTabs } from '@/components/NavigationTabs'
 import { AuthGuard } from '@/components/AuthGuard'
 import { EncaissementsKpiCards } from '@/components/encaissements/EncaissementsKpiCards'
@@ -16,6 +16,7 @@ import { EncaissementsTable } from '@/components/encaissements/EncaissementsTabl
 import { EncaissementsFilters } from '@/components/encaissements/EncaissementsFilters'
 import { PaymentStatusModal } from '@/components/encaissements/PaymentStatusModal'
 import { UnpaidDetailsModal } from '@/components/encaissements/UnpaidDetailsModal'
+import { DeferPaymentModal } from '@/components/encaissements/DeferPaymentModal'
 import { EncaissementsKpiDetailsModal, EncaissementKpiType } from '@/components/encaissements/EncaissementsKpiDetailsModal'
 import { ExportEncaissementsButton } from '@/components/encaissements/ExportEncaissementsButton'
 import { useToast } from '@/hooks/use-toast'
@@ -25,6 +26,7 @@ export default function EncaissementsPage() {
   const [deals, setDeals] = useState<CommissionDeal[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
   const [paymentModalEntry, setPaymentModalEntry] = useState<EncaissementEntry | null>(null)
+  const [deferModalEntry, setDeferModalEntry] = useState<EncaissementEntry | null>(null)
   const [showUnpaidModal, setShowUnpaidModal] = useState(false)
   const [kpiModalType, setKpiModalType] = useState<EncaissementKpiType | null>(null)
   const { toast } = useToast()
@@ -143,6 +145,40 @@ export default function EncaissementsPage() {
     setPaymentModalEntry(entry)
   }
 
+  async function handleDefer(entry: EncaissementEntry) {
+    setDeferModalEntry(entry)
+  }
+
+  async function handleSaveDefer(dealId: string, paymentType: 'M' | 'M_PLUS_1', reason: string | null) {
+    try {
+      const updated = await deferPaymentToNextMonth(dealId, paymentType, reason)
+      setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))
+      setDeferModalEntry(null)
+      toast({
+        title: 'Échéance reportée',
+        description: 'L\'échéance a été reportée au mois suivant.',
+        variant: 'success',
+      })
+    } catch (err) {
+      toast({ title: 'Erreur', description: err instanceof Error ? err.message : 'Impossible de reporter l\'échéance', variant: 'destructive' })
+    }
+  }
+
+  async function handleCancelDeferral(entry: EncaissementEntry) {
+    if (!window.confirm(`Annuler le report de "${entry.clientName}" ?\n\nL'échéance reviendra au mois initial : ${entry.initialPaymentMonthLabel}.`)) return
+    try {
+      const updated = await cancelPaymentDeferral(entry.dealId, entry.paymentType)
+      setDeals(prev => prev.map(d => d.id === updated.id ? updated : d))
+      toast({
+        title: 'Report annulé',
+        description: `${entry.clientName} — retour au mois ${entry.initialPaymentMonthLabel}`,
+        variant: 'default',
+      })
+    } catch (err) {
+      toast({ title: 'Erreur', description: err instanceof Error ? err.message : 'Impossible d\'annuler le report', variant: 'destructive' })
+    }
+  }
+
   async function handleCancelPayment(entry: EncaissementEntry) {
     try {
       const updated = await updatePaymentStatus(entry.dealId, entry.paymentType, {
@@ -230,6 +266,7 @@ export default function EncaissementsPage() {
             onClickPaidCount={() => setKpiModalType('paid_count')}
             onClickUnpaidCount={() => setKpiModalType('unpaid_count')}
             onClickVariance={() => setKpiModalType('variance')}
+            onClickDeferred={() => setKpiModalType('deferred')}
           />
         </section>
 
@@ -271,6 +308,8 @@ export default function EncaissementsPage() {
               onMarkPaid={handleMarkPaid}
               onEditPayment={handleEditPayment}
               onCancelPayment={handleCancelPayment}
+              onDefer={handleDefer}
+              onCancelDeferral={handleCancelDeferral}
             />
           </div>
         </section>
@@ -287,6 +326,13 @@ export default function EncaissementsPage() {
         open={paymentModalEntry !== null}
         onClose={() => setPaymentModalEntry(null)}
         onSave={handleSavePayment}
+      />
+
+      <DeferPaymentModal
+        entry={deferModalEntry}
+        open={deferModalEntry !== null}
+        onClose={() => setDeferModalEntry(null)}
+        onConfirm={handleSaveDefer}
       />
 
       <UnpaidDetailsModal

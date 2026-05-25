@@ -305,7 +305,8 @@ export async function exportRevenueToExcel(deals: CalculatedDeal[]): Promise<voi
 export function exportEncaissementsToCSV(entries: EncaissementEntry[]): void {
   const headers = [
     'Mois commission',
-    'Mois encaissement',
+    'Mois encaissement initial',
+    'Mois encaissement final',
     'Date d\'effet',
     'Client',
     'Mandataire',
@@ -322,11 +323,16 @@ export function exportEncaissementsToCSV(entries: EncaissementEntry[]): void {
     'Contrat OK',
     'Report fin de mois',
     'Négociation UNEP',
+    'Reportée',
+    'Nombre de mois reportés',
+    'Date du report',
+    'Raison du report',
     'Commentaire paiement',
   ]
 
   const rows = entries.map(e => [
     e.commissionMonthLabel,
+    e.initialPaymentMonthLabel,
     e.paymentMonthLabel,
     e.effectiveDate,
     e.clientName,
@@ -344,6 +350,10 @@ export function exportEncaissementsToCSV(entries: EncaissementEntry[]): void {
     e.isContractOk ? 'Oui' : 'Non',
     e.deferToEndOfMonth ? 'Oui' : 'Non',
     e.needsUnepNegotiation ? 'Oui' : 'Non',
+    e.deferredMonths > 0 ? 'Oui' : 'Non',
+    e.deferredMonths > 0 ? String(e.deferredMonths) : '',
+    e.deferredAt ? new Date(e.deferredAt).toLocaleDateString('fr-FR') : '',
+    e.deferredReason ?? '',
     e.paymentComment ?? '',
   ])
 
@@ -352,12 +362,14 @@ export function exportEncaissementsToCSV(entries: EncaissementEntry[]): void {
   const totalPaid = paidEntries.reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
 
   const totalsRow = [
-    'TOTAL', '', '', '', '', '', '', '', '',
+    'TOTAL', '', '', '', '', '', '', '', '', '',
     formatAmount(totalExpected),
     `${paidEntries.length}/${entries.length} payées`,
     '', formatAmount(totalPaid),
     formatAmount(totalExpected - totalPaid),
-    '', '', '', '', '',
+    '', '', '', '',
+    `${entries.filter(e => e.deferredMonths > 0).length} reportée(s)`,
+    '', '', '', '',
   ]
 
   const csvContent = [headers, ...rows, totalsRow]
@@ -380,7 +392,8 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
 
   const headers = [
     'Mois commission',
-    'Mois encaissement',
+    'Mois encaissement initial',
+    'Mois encaissement final',
     'Date d\'effet',
     'Client',
     'Mandataire',
@@ -397,11 +410,16 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
     'Contrat OK',
     'Report fin de mois',
     'Négociation UNEP',
+    'Reportée',
+    'Nombre de mois reportés',
+    'Date du report',
+    'Raison du report',
     'Commentaire paiement',
   ]
 
   const dataRows = entries.map(e => [
     e.commissionMonthLabel,
+    e.initialPaymentMonthLabel,
     e.paymentMonthLabel,
     e.effectiveDate,
     e.clientName,
@@ -419,6 +437,10 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
     e.isContractOk ? 'Oui' : 'Non',
     e.deferToEndOfMonth ? 'Oui' : 'Non',
     e.needsUnepNegotiation ? 'Oui' : 'Non',
+    e.deferredMonths > 0 ? 'Oui' : 'Non',
+    e.deferredMonths > 0 ? e.deferredMonths : '',
+    e.deferredAt ? new Date(e.deferredAt).toLocaleDateString('fr-FR') : '',
+    e.deferredReason ?? '',
     e.paymentComment ?? '',
   ])
 
@@ -427,12 +449,14 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
   const totalPaid = paidEntries.reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
 
   const totalsRow = [
-    'TOTAL', '', '', '', '', '', '', '', '',
+    'TOTAL', '', '', '', '', '', '', '', '', '',
     totalExpected,
     `${paidEntries.length}/${entries.length} payées`,
     '', totalPaid,
     totalExpected - totalPaid,
-    '', '', '', '', '',
+    '', '', '', '',
+    `${entries.filter(e => e.deferredMonths > 0).length} reportée(s)`,
+    '', '', '', '',
   ]
 
   const wsData = [headers, ...dataRows, totalsRow]

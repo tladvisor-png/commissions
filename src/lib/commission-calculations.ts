@@ -16,6 +16,17 @@ export function addOneMonth(monthKey: string): string {
   }
 }
 
+export function addNMonths(monthKey: string, n: number): string {
+  if (n === 0) return monthKey
+  try {
+    const [year, month] = monthKey.split('-').map(Number)
+    const date = new Date(year, month - 1, 1)
+    return format(addMonths(date, n), 'yyyy-MM')
+  } catch {
+    return monthKey
+  }
+}
+
 export function getMonthM(effectiveDate: string): string {
   try {
     const date = parseISO(effectiveDate)
@@ -322,14 +333,18 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
       const paidAmount = isPaid ? (mStatus?.paidAmount ?? null) : null
       const expectedAmount = calculated.payAtM
       const commissionMonthKey = calculated.monthM
-      const encaissementMonthKey = addOneMonth(commissionMonthKey)
+      const initialPaymentMonthKey = addOneMonth(commissionMonthKey)
+      const deferredMonths = mStatus?.deferredMonths ?? 0
+      const finalPaymentMonthKey = deferredMonths > 0 ? addNMonths(initialPaymentMonthKey, deferredMonths) : initialPaymentMonthKey
       entries.push({
         id: `${deal.id}-M`,
         dealId: deal.id,
         commissionMonthKey,
         commissionMonthLabel: formatMonthLabel(commissionMonthKey),
-        paymentMonthKey: encaissementMonthKey,
-        paymentMonthLabel: formatMonthLabel(encaissementMonthKey),
+        initialPaymentMonthKey,
+        initialPaymentMonthLabel: formatMonthLabel(initialPaymentMonthKey),
+        paymentMonthKey: finalPaymentMonthKey,
+        paymentMonthLabel: formatMonthLabel(finalPaymentMonthKey),
         paymentType: 'M',
         expectedAmount,
         isPaid,
@@ -349,6 +364,11 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         ppAmount: deal.ppAmount,
         paymentComment: mStatus?.comment ?? null,
         contractType: deal.contractType,
+        deferredMonths,
+        deferredToMonthKey: mStatus?.deferredToMonthKey ?? null,
+        deferredToMonthLabel: mStatus?.deferredToMonthLabel ?? null,
+        deferredAt: mStatus?.deferredAt ?? null,
+        deferredReason: mStatus?.deferredReason ?? null,
       })
     }
 
@@ -358,14 +378,18 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
       const paidAmount = isPaid ? (mPlus1Status?.paidAmount ?? null) : null
       const expectedAmount = calculated.payAtMPlus1
       const commissionMonthKey = calculated.monthMPlus1
-      const encaissementMonthKey = addOneMonth(commissionMonthKey)
+      const initialPaymentMonthKey = addOneMonth(commissionMonthKey)
+      const deferredMonths = mPlus1Status?.deferredMonths ?? 0
+      const finalPaymentMonthKey = deferredMonths > 0 ? addNMonths(initialPaymentMonthKey, deferredMonths) : initialPaymentMonthKey
       entries.push({
         id: `${deal.id}-M_PLUS_1`,
         dealId: deal.id,
         commissionMonthKey,
         commissionMonthLabel: formatMonthLabel(commissionMonthKey),
-        paymentMonthKey: encaissementMonthKey,
-        paymentMonthLabel: formatMonthLabel(encaissementMonthKey),
+        initialPaymentMonthKey,
+        initialPaymentMonthLabel: formatMonthLabel(initialPaymentMonthKey),
+        paymentMonthKey: finalPaymentMonthKey,
+        paymentMonthLabel: formatMonthLabel(finalPaymentMonthKey),
         paymentType: 'M_PLUS_1',
         expectedAmount,
         isPaid,
@@ -385,6 +409,11 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         ppAmount: deal.ppAmount,
         paymentComment: mPlus1Status?.comment ?? null,
         contractType: deal.contractType,
+        deferredMonths,
+        deferredToMonthKey: mPlus1Status?.deferredToMonthKey ?? null,
+        deferredToMonthLabel: mPlus1Status?.deferredToMonthLabel ?? null,
+        deferredAt: mPlus1Status?.deferredAt ?? null,
+        deferredReason: mPlus1Status?.deferredReason ?? null,
       })
     }
   }
@@ -411,6 +440,7 @@ export function calculateEncaissementKpis(entries: EncaissementEntry[]): Encaiss
     paidCount: paidEntries.length,
     unpaidCount: unpaidEntries.length,
     totalVariance,
+    deferredCount: entries.filter(e => e.deferredMonths > 0).length,
   }
 }
 

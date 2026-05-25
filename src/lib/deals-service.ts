@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { CommissionDeal, ContractType, PaymentStatusDetail } from '@/types/commission'
+import { getMonthM, getMonthMPlus1, addOneMonth, addNMonths, formatMonthLabel } from './commission-calculations'
 
 const TABLE = 'commission_deals'
 const LOCAL_STORAGE_KEY = 'commission_deals'
@@ -9,6 +10,25 @@ const DEFAULT_PAYMENT_STATUS: PaymentStatusDetail = {
   paidDate: null,
   paidAmount: null,
   comment: null,
+  deferredMonths: 0,
+  deferredToMonthKey: null,
+  deferredToMonthLabel: null,
+  deferredAt: null,
+  deferredReason: null,
+}
+
+function normalizePaymentStatus(raw: Partial<PaymentStatusDetail> | undefined | null): PaymentStatusDetail {
+  return {
+    paid: raw?.paid ?? false,
+    paidDate: raw?.paidDate ?? null,
+    paidAmount: raw?.paidAmount ?? null,
+    comment: raw?.comment ?? null,
+    deferredMonths: raw?.deferredMonths ?? 0,
+    deferredToMonthKey: raw?.deferredToMonthKey ?? null,
+    deferredToMonthLabel: raw?.deferredToMonthLabel ?? null,
+    deferredAt: raw?.deferredAt ?? null,
+    deferredReason: raw?.deferredReason ?? null,
+  }
 }
 
 export function mapSupabaseDealToCommissionDeal(row: Record<string, unknown>): CommissionDeal {
@@ -30,8 +50,8 @@ export function mapSupabaseDealToCommissionDeal(row: Record<string, unknown>): C
     isEligibleForSurcommission: Boolean(row.is_eligible_for_surcommission ?? true),
     surcommissionEligibilityRate: Number(row.surcommission_eligibility_rate ?? 100),
     paymentStatuses: {
-      M: raw?.M ?? DEFAULT_PAYMENT_STATUS,
-      M_PLUS_1: raw?.M_PLUS_1 ?? DEFAULT_PAYMENT_STATUS,
+      M: normalizePaymentStatus(raw?.M),
+      M_PLUS_1: normalizePaymentStatus(raw?.M_PLUS_1),
     },
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
@@ -199,7 +219,10 @@ export async function updatePaymentStatus(
   }
 
   const existing = (current.payment_statuses as CommissionDeal['paymentStatuses']) ?? {}
-  const updatedStatuses = { ...existing, [paymentType]: status }
+  const existingTypeStatus = (existing[paymentType] ?? {}) as Partial<PaymentStatusDetail>
+  // Spread order: existing deferral fields first, then new payment fields (preserves deferral unless explicitly overridden)
+  const mergedStatus: PaymentStatusDetail = { ...existingTypeStatus, ...status }
+  const updatedStatuses = { ...existing, [paymentType]: mergedStatus }
 
   const { data, error } = await supabase
     .from(TABLE)
@@ -309,6 +332,113 @@ export async function migrateLocalStorageDealsToSupabase(): Promise<number> {
   }
 
   return (data ?? []).length
+}
+
+export async function deferPaymentToNextMonth(
+  dealId: string,
+  paymentType: 'M' | 'M_PLUS_1',
+  reason: string | null
+): Promise<CommissionDeal> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('Utilisateur non connecté')
+
+  const { data: current, error: fetchError } = await supabase
+    .from(TABLE)
+    .select('payment_statuses, effective_date')
+    .eq('id', dealId)
+    .single()
+
+  if (fetchError || !current) {
+    throw new Error(
+      `Erreur Supabase : affaire introuvable — ${fetchError?.message ?? 'id inconnu'}`
+    )
+  }
+
+  const existing = (current.payment_statuses as CommissionDeal['paymentStatuses']) ?? {}
+  const currentStatus = normalizePaymentStatus(existing[paymentType])
+
+  const effectiveDate = current.effective_date as string
+  const commissionMonthKey = paymentType === 'M'
+    ? getMonthM(effectiveDate)
+    : getMonthMPlus1(effectiveDate)
+  const initialPaymentMonthKey = addOneMonth(commissionMonthKey)
+  const newDeferredMonths = (currentStatus.deferredMonths ?? 0) + 1
+  const newFinalMonthKey = addNMonths(initialPaymentMonthKey, newDeferredMonths)
+
+  const updatedStatus: PaymentStatusDetail = {
+    ...currentStatus,
+    deferredMonths: newDeferredMonths,
+    deferredToMonthKey: newFinalMonthKey,
+    deferredToMonthLabel: formatMonthLabel(newFinalMonthKey),
+    deferredAt: new Date().toISOString(),
+    deferredReason: reason || null,
+  }
+
+  const updatedStatuses = { ...existing, [paymentType]: updatedStatus }
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ payment_statuses: updatedStatuses, updated_at: new Date().toISOString() })
+    .eq('id', dealId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(
+      `Erreur Supabase : impossible de reporter l'échéance — ${error.message}`
+    )
+  }
+
+  return mapSupabaseDealToCommissionDeal(data as Record<string, unknown>)
+}
+
+export async function cancelPaymentDeferral(
+  dealId: string,
+  paymentType: 'M' | 'M_PLUS_1'
+): Promise<CommissionDeal> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('Utilisateur non connecté')
+
+  const { data: current, error: fetchError } = await supabase
+    .from(TABLE)
+    .select('payment_statuses')
+    .eq('id', dealId)
+    .single()
+
+  if (fetchError || !current) {
+    throw new Error(
+      `Erreur Supabase : affaire introuvable — ${fetchError?.message ?? 'id inconnu'}`
+    )
+  }
+
+  const existing = (current.payment_statuses as CommissionDeal['paymentStatuses']) ?? {}
+  const currentStatus = normalizePaymentStatus(existing[paymentType])
+
+  const updatedStatus: PaymentStatusDetail = {
+    ...currentStatus,
+    deferredMonths: 0,
+    deferredToMonthKey: null,
+    deferredToMonthLabel: null,
+    deferredAt: null,
+    deferredReason: null,
+  }
+
+  const updatedStatuses = { ...existing, [paymentType]: updatedStatus }
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ payment_statuses: updatedStatuses, updated_at: new Date().toISOString() })
+    .eq('id', dealId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(
+      `Erreur Supabase : impossible d'annuler le report — ${error.message}`
+    )
+  }
+
+  return mapSupabaseDealToCommissionDeal(data as Record<string, unknown>)
 }
 
 export async function claimOrphanDeals(): Promise<number> {

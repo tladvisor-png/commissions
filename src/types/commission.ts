@@ -13,6 +13,11 @@ export type PaymentStatusDetail = {
   paidDate: string | null
   paidAmount: number | null
   comment: string | null
+  deferredMonths?: number
+  deferredToMonthKey?: string | null
+  deferredToMonthLabel?: string | null
+  deferredAt?: string | null
+  deferredReason?: string | null
 }
 
 export type CommissionDeal = {
@@ -160,6 +165,8 @@ export type EncaissementEntry = {
   dealId: string
   commissionMonthKey: string
   commissionMonthLabel: string
+  initialPaymentMonthKey: string
+  initialPaymentMonthLabel: string
   paymentMonthKey: string
   paymentMonthLabel: string
   paymentType: 'M' | 'M_PLUS_1'
@@ -181,6 +188,11 @@ export type EncaissementEntry = {
   ppAmount: number
   paymentComment: string | null
   contractType?: ContractType
+  deferredMonths: number
+  deferredToMonthKey: string | null
+  deferredToMonthLabel: string | null
+  deferredAt: string | null
+  deferredReason: string | null
 }
 
 export type EncaissementKpiStats = {
@@ -190,6 +202,7 @@ export type EncaissementKpiStats = {
   paidCount: number
   unpaidCount: number
   totalVariance: number
+  deferredCount: number
 }
 
 export type EncaissementFilterState = {

@@ -3,7 +3,7 @@
 import { EncaissementKpiStats } from '@/types/commission'
 import { formatCurrency } from '@/lib/commission-calculations'
 import {
-  TrendingDown, CheckCircle, CreditCard, Clock, AlertCircle, Scale,
+  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock,
 } from 'lucide-react'
 
 interface EncaissementsKpiCardsProps {
@@ -14,6 +14,7 @@ interface EncaissementsKpiCardsProps {
   onClickPaidCount: () => void
   onClickUnpaidCount: () => void
   onClickVariance: () => void
+  onClickDeferred: () => void
   monthLabel: string
 }
 
@@ -57,6 +58,7 @@ export function EncaissementsKpiCards({
   onClickPaidCount,
   onClickUnpaidCount,
   onClickVariance,
+  onClickDeferred,
   monthLabel,
 }: EncaissementsKpiCardsProps) {
   const monthSubtitle = monthLabel ? `Sur ${monthLabel}` : 'Tous les mois'
@@ -101,7 +103,7 @@ export function EncaissementsKpiCards({
       </div>
 
       {/* Ligne 2 : compteurs + écarts */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard
           title="Échéances payées"
           value={String(stats.paidCount)}
@@ -131,6 +133,16 @@ export function EncaissementsKpiCards({
           bgColor={stats.totalVariance > 0 ? 'bg-amber-50' : 'bg-slate-50'}
           borderColor={stats.totalVariance > 0 ? 'border-amber-100' : 'border-slate-200'}
           onClick={onClickVariance}
+        />
+        <KpiCard
+          title="Échéances reportées"
+          value={String(stats.deferredCount)}
+          subtitle={stats.deferredCount > 0 ? 'Décalées au mois suivant' : 'Aucun report'}
+          icon={<CalendarClock className="h-5 w-5" />}
+          color={stats.deferredCount > 0 ? 'text-violet-600' : 'text-slate-400'}
+          bgColor={stats.deferredCount > 0 ? 'bg-violet-50' : 'bg-slate-50'}
+          borderColor={stats.deferredCount > 0 ? 'border-violet-100' : 'border-slate-200'}
+          onClick={onClickDeferred}
         />
       </div>
     </div>

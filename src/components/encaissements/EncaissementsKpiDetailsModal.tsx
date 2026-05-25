@@ -25,6 +25,7 @@ export type EncaissementKpiType =
   | 'paid_count'
   | 'unpaid_count'
   | 'variance'
+  | 'deferred'
 
 const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   expected: 'Surcommissions attendues',
@@ -33,6 +34,7 @@ const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   paid_count: 'Échéances payées',
   unpaid_count: 'Échéances non payées',
   variance: 'Écarts de paiement',
+  deferred: 'Échéances reportées',
 }
 
 interface EncaissementsKpiDetailsModalProps {
@@ -70,6 +72,7 @@ function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[]):
     case 'paid_count': return entries.filter(e => e.isPaid)
     case 'unpaid_count': return entries.filter(e => !e.isPaid)
     case 'variance': return entries.filter(e => e.isPaid && e.paidAmount !== null && Math.abs(e.paidAmount - e.expectedAmount) > 0.01)
+    case 'deferred': return entries.filter(e => e.deferredMonths > 0)
     default: return entries
   }
 }
@@ -170,7 +173,7 @@ export function EncaissementsKpiDetailsModal({
                   {[
                     'Mois commission', 'Mois encaissement', 'Date effet', 'Client', 'Mandataire',
                     'Type', 'Type contrat', 'Attendu', 'Payée', 'Date paiement', 'Montant payé', 'Delta',
-                    'Statut', 'Report', 'UNEP',
+                    'Statut', 'FDM', 'UNEP', 'Mois initial', 'Reportée', 'Raison', 'Reporté le',
                   ].map(h => (
                     <th key={h} className="px-3 py-2.5 text-left font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
@@ -252,6 +255,24 @@ export function EncaissementsKpiDetailsModal({
                           <span title="À négocier UNEP"><MessageSquare className="h-3.5 w-3.5 text-orange-500 inline" /></span>
                         ) : <span className="text-slate-300">—</span>}
                       </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-slate-500">
+                        {entry.initialPaymentMonthLabel}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {entry.deferredMonths > 0 ? (
+                          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-[10px] px-1.5 py-0 gap-0.5 whitespace-nowrap">
+                            <CalendarClock className="h-2.5 w-2.5" />+{entry.deferredMonths} mois
+                          </Badge>
+                        ) : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-3 py-2 max-w-[120px] truncate text-slate-500 text-xs">
+                        {entry.deferredReason ?? <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-slate-500 text-xs">
+                        {entry.deferredAt
+                          ? new Date(entry.deferredAt).toLocaleDateString('fr-FR')
+                          : <span className="text-slate-300">—</span>}
+                      </td>
                       {onMarkPaid && (
                         <td className="px-3 py-2 whitespace-nowrap">
                           {!entry.isPaid && (
@@ -289,7 +310,7 @@ export function EncaissementsKpiDetailsModal({
                       ? <span className="text-orange-600">{formatCurrency(totalDelta)}</span>
                       : <span className="text-emerald-600">0,00 €</span>}
                   </td>
-                  <td colSpan={onMarkPaid ? 4 : 3}></td>
+                  <td colSpan={onMarkPaid ? 8 : 7}></td>
                 </tr>
               </tfoot>
             </table>
