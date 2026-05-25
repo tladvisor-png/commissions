@@ -1,7 +1,7 @@
 import {
   CommissionDeal, CalculatedDeal, DealStatus, KpiStats, KpiCardType,
   MonthlyStats, PaymentEntry, EncaissementEntry, EncaissementKpiStats,
-  RevenueKpiStats, RevenueKpiCardType,
+  RevenueKpiStats, RevenueKpiCardType, MonthlyRecap,
 } from '@/types/commission'
 import { format, addMonths, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -511,6 +511,104 @@ export function getDealsForRevenueKpi(type: RevenueKpiCardType, deals: Calculate
     default: return deals
   }
 }
+
+// ─── Récapitulatif mensuel ───────────────────────────────────────────────────
+
+/** Surco produite d'un mois : entrées dont le mois de production = monthKey */
+export function getProducedSurcommissionEntries(deals: CommissionDeal[], monthKey: string): EncaissementEntry[] {
+  return getEncaissementEntries(deals).filter(e => e.commissionMonthKey === monthKey)
+}
+
+/** Surco encaissable d'un mois : entrées dont le mois final d'encaissement = monthKey */
+export function getCollectibleSurcommissionEntries(deals: CommissionDeal[], monthKey: string): EncaissementEntry[] {
+  return getEncaissementEntries(deals).filter(e => e.paymentMonthKey === monthKey)
+}
+
+/** Surco réellement encaissée d'un mois : entrées payées avec paidDate dans monthKey */
+export function getPaidSurcommissionEntries(deals: CommissionDeal[], monthKey: string): EncaissementEntry[] {
+  return getEncaissementEntries(deals).filter(e =>
+    e.isPaid && e.paidDate && e.paidDate.substring(0, 7) === monthKey
+  )
+}
+
+/** Reste à encaisser d'un mois : échéances encaissables non payées ou partiellement payées */
+export function getRemainingToCollectEntries(deals: CommissionDeal[], monthKey: string): EncaissementEntry[] {
+  return getEncaissementEntries(deals).filter(e =>
+    e.paymentMonthKey === monthKey &&
+    (!e.isPaid || (e.paidAmount !== null && e.paidAmount < e.expectedAmount - 0.01))
+  )
+}
+
+/** Affaires dont la date d'effet est dans monthKey (CA produit) */
+export function getProducedRevenueDeals(deals: CommissionDeal[], monthKey: string): CalculatedDeal[] {
+  return deals.map(calculateDeal).filter(d => d.monthM === monthKey)
+}
+
+/** Affaires du mois précédent utilisées pour estimer le CA encaissé de monthKey */
+export function getEstimatedCollectedRevenueDeals(deals: CommissionDeal[], monthKey: string): CalculatedDeal[] {
+  const prevMonthKey = addNMonths(monthKey, -1)
+  return deals.map(calculateDeal).filter(d => d.monthM === prevMonthKey)
+}
+
+/**
+ * Construit la liste des récapitulatifs mensuels.
+ *
+ * - producedSurcommission  : surco dont le mois de production = monthKey
+ * - collectibleSurcommission : surco dont le mois final d'encaissement = monthKey
+ * - paidSurcommission      : surco réellement payée avec paidDate dans monthKey
+ * - remainingSurcommission  : collectible - paid
+ */
+export function getMonthlyRecap(deals: CommissionDeal[]): MonthlyRecap[] {
+  const allEntries = getEncaissementEntries(deals)
+  const allCalculated = deals.map(calculateDeal)
+
+  const monthKeys = new Set<string>()
+  for (const e of allEntries) {
+    if (e.commissionMonthKey) monthKeys.add(e.commissionMonthKey)
+    if (e.paymentMonthKey) monthKeys.add(e.paymentMonthKey)
+    if (e.paidDate) {
+      const mk = e.paidDate.substring(0, 7)
+      if (mk) monthKeys.add(mk)
+    }
+  }
+  for (const d of allCalculated) {
+    if (d.monthM) monthKeys.add(d.monthM)
+  }
+
+  return Array.from(monthKeys).sort().map(monthKey => {
+    const produced = allEntries.filter(e => e.commissionMonthKey === monthKey)
+    const collectible = allEntries.filter(e => e.paymentMonthKey === monthKey)
+    const paid = allEntries.filter(e => e.isPaid && e.paidDate && e.paidDate.substring(0, 7) === monthKey)
+    const producedRevDeals = allCalculated.filter(d => d.monthM === monthKey)
+    const prevMonthKey = addNMonths(monthKey, -1)
+    const estCollectedDeals = allCalculated.filter(d => d.monthM === prevMonthKey)
+
+    const producedSurcommission = produced.reduce((s, e) => s + e.expectedAmount, 0)
+    const collectibleSurcommission = collectible.reduce((s, e) => s + e.expectedAmount, 0)
+    const paidSurcommission = paid.reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
+    const remainingSurcommission = collectibleSurcommission - paidSurcommission
+    const producedRevenue = producedRevDeals.reduce((s, d) => s + d.caTotal, 0)
+    const estimatedCollectedRevenue = estCollectedDeals.reduce((s, d) => s + d.caTotal, 0)
+
+    return {
+      monthKey,
+      monthLabel: formatMonthLabel(monthKey),
+      producedSurcommission: Math.round(producedSurcommission * 100) / 100,
+      collectibleSurcommission: Math.round(collectibleSurcommission * 100) / 100,
+      paidSurcommission: Math.round(paidSurcommission * 100) / 100,
+      remainingSurcommission: Math.round(remainingSurcommission * 100) / 100,
+      surcommissionDelta: Math.round(remainingSurcommission * 100) / 100,
+      producedRevenue: Math.round(producedRevenue * 100) / 100,
+      estimatedCollectedRevenue: Math.round(estimatedCollectedRevenue * 100) / 100,
+      revenueDelta: Math.round((producedRevenue - estimatedCollectedRevenue) * 100) / 100,
+      producedDealsCount: producedRevDeals.length,
+      collectiblePaymentEntriesCount: collectible.length,
+      paidPaymentEntriesCount: paid.length,
+    }
+  })
+}
+
+// ─── Fin Récapitulatif mensuel ────────────────────────────────────────────────
 
 export function getDealEncaissementStatus(
   deal: CommissionDeal

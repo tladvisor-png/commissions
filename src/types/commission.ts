@@ -211,3 +211,31 @@ export type EncaissementFilterState = {
   monthKey: string
   paymentStatus: 'all' | 'paid' | 'unpaid'
 }
+
+export type MonthlyRecap = {
+  monthKey: string
+  monthLabel: string
+  producedSurcommission: number
+  collectibleSurcommission: number
+  paidSurcommission: number
+  remainingSurcommission: number
+  surcommissionDelta: number
+  producedRevenue: number
+  estimatedCollectedRevenue: number
+  revenueDelta: number
+  producedDealsCount: number
+  collectiblePaymentEntriesCount: number
+  paidPaymentEntriesCount: number
+}
+
+export type RecapKpiType =
+  | 'SURCO_PRODUITE'
+  | 'SURCO_ENCAISSABLE'
+  | 'SURCO_ENCAISSEE'
+  | 'RESTE_A_ENCAISSER'
+  | 'CA_PRODUIT'
+  | 'CA_ENCAISSE_ESTIME'
+
+export type RecapFilterState = {
+  monthKey: string
+}

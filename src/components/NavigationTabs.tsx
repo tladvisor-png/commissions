@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, Wallet, TrendingUp, LogOut } from 'lucide-react'
+import { LayoutDashboard, Wallet, TrendingUp, BarChart2, LogOut } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
 interface NavigationTabsProps {
-  activePage: 'dashboard' | 'encaissements' | 'chiffre-affaires'
+  activePage: 'dashboard' | 'encaissements' | 'chiffre-affaires' | 'recapitulatif'
 }
 
 export function NavigationTabs({ activePage }: NavigationTabsProps) {
@@ -53,6 +53,17 @@ export function NavigationTabs({ activePage }: NavigationTabsProps) {
         >
           <TrendingUp className="h-4 w-4" />
           Chiffre d'affaires
+        </Link>
+        <Link
+          href="/recapitulatif"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activePage === 'recapitulatif'
+              ? 'bg-teal-700 text-white'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BarChart2 className="h-4 w-4" />
+          Récapitulatif
         </Link>
       </nav>
 

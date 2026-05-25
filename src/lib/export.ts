@@ -1,4 +1,4 @@
-import { CommissionDeal, EncaissementEntry, CalculatedDeal, CONTRACT_TYPE_LABELS } from '@/types/commission'
+import { CommissionDeal, EncaissementEntry, CalculatedDeal, CONTRACT_TYPE_LABELS, MonthlyRecap } from '@/types/commission'
 import { calculateDeal, formatMonthLabel, getEffectivePuEntryFeesRate, getEffectivePpPaymentFeesRate, getNetEntryFeesRate } from './commission-calculations'
 import { format } from 'date-fns'
 
@@ -467,5 +467,61 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
   XLSX.utils.book_append_sheet(wb, ws, 'Encaissements')
 
   const fileName = `encaissements_surcommissions_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+  XLSX.writeFile(wb, fileName)
+}
+
+export async function exportRecapToExcel(recaps: MonthlyRecap[]): Promise<void> {
+  const XLSX = await import('xlsx')
+
+  const headers = [
+    'Mois',
+    'Surco produite (€)',
+    'Surco encaissable (€)',
+    'Surco encaissée (€)',
+    'Reste à encaisser (€)',
+    'CA produit (€)',
+    'CA encaissable estimé (€)',
+    'Delta CA (€)',
+    'Nb affaires produites',
+    'Nb échéances encaissables',
+    'Nb échéances payées',
+  ]
+
+  const dataRows = recaps.map(r => [
+    r.monthLabel,
+    r.producedSurcommission,
+    r.collectibleSurcommission,
+    r.paidSurcommission,
+    r.remainingSurcommission,
+    r.producedRevenue,
+    r.estimatedCollectedRevenue,
+    r.revenueDelta,
+    r.producedDealsCount,
+    r.collectiblePaymentEntriesCount,
+    r.paidPaymentEntriesCount,
+  ])
+
+  const totalsRow = [
+    'TOTAL',
+    recaps.reduce((s, r) => s + r.producedSurcommission, 0),
+    recaps.reduce((s, r) => s + r.collectibleSurcommission, 0),
+    recaps.reduce((s, r) => s + r.paidSurcommission, 0),
+    recaps.reduce((s, r) => s + r.remainingSurcommission, 0),
+    recaps.reduce((s, r) => s + r.producedRevenue, 0),
+    recaps.reduce((s, r) => s + r.estimatedCollectedRevenue, 0),
+    recaps.reduce((s, r) => s + r.revenueDelta, 0),
+    recaps.reduce((s, r) => s + r.producedDealsCount, 0),
+    recaps.reduce((s, r) => s + r.collectiblePaymentEntriesCount, 0),
+    recaps.reduce((s, r) => s + r.paidPaymentEntriesCount, 0),
+  ]
+
+  const wsData = [headers, ...dataRows, totalsRow]
+  const ws = XLSX.utils.aoa_to_sheet(wsData)
+  ws['!cols'] = headers.map(() => ({ wch: 22 }))
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Récapitulatif mensuel')
+
+  const fileName = `recapitulatif_mensuel_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
   XLSX.writeFile(wb, fileName)
 }
