@@ -76,6 +76,12 @@ export default function EncaissementsPage() {
       if (filters.monthKey && entry.paymentMonthKey !== filters.monthKey) return false
       if (filters.paymentStatus === 'paid' && !entry.isPaid) return false
       if (filters.paymentStatus === 'unpaid' && entry.isPaid) return false
+      if (filters.paymentStatus === 'with_variance') {
+        // Uniquement les échéances payées avec un écart de paiement
+        if (!entry.isPaid) return false
+        if (entry.paidAmount === null) return false
+        if (Math.abs(entry.paidAmount - entry.expectedAmount) <= 0.01) return false
+      }
       if (filters.search) {
         const q = filters.search.toLowerCase()
         if (
@@ -262,7 +268,7 @@ export default function EncaissementsPage() {
             monthLabel={selectedMonthLabel}
             onClickExpected={() => setKpiModalType('expected')}
             onClickPaid={() => setKpiModalType('paid')}
-            onClickDelta={() => setKpiModalType('unpaid')}
+            onClickDelta={() => setKpiModalType('remaining_total')}
             onClickPaidCount={() => setKpiModalType('paid_count')}
             onClickUnpaidCount={() => setKpiModalType('unpaid_count')}
             onClickVariance={() => setKpiModalType('variance')}

@@ -433,12 +433,15 @@ export function calculateEncaissementKpis(entries: EncaissementEntry[]): Encaiss
     .filter(e => e.paidAmount !== null && Math.abs(e.paidAmount - e.expectedAmount) > 0.01)
     .reduce((s, e) => s + Math.abs((e.paidAmount ?? 0) - e.expectedAmount), 0)
 
+  const totalUnpaidAmount = unpaidEntries.reduce((s, e) => s + e.expectedAmount, 0)
+
   return {
     totalExpected,
     totalPaid,
     totalDelta,
     paidCount: paidEntries.length,
     unpaidCount: unpaidEntries.length,
+    totalUnpaidAmount,
     totalVariance,
     deferredCount: entries.filter(e => e.deferredMonths > 0).length,
   }

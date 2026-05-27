@@ -3,7 +3,7 @@
 import { EncaissementKpiStats } from '@/types/commission'
 import { formatCurrency } from '@/lib/commission-calculations'
 import {
-  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock,
+  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet,
 } from 'lucide-react'
 
 interface EncaissementsKpiCardsProps {
@@ -91,10 +91,10 @@ export function EncaissementsKpiCards({
           onClick={onClickPaid}
         />
         <KpiCard
-          title="Delta non payé"
+          title="Reste total à encaisser"
           value={formatCurrency(stats.totalDelta)}
-          subtitle={stats.totalDelta > 0 ? `${deltaPercent}% restant à encaisser` : 'Tout est encaissé'}
-          icon={<TrendingDown className="h-5 w-5" />}
+          subtitle={stats.totalDelta > 0 ? `${deltaPercent}% du total attendu` : 'Tout est encaissé'}
+          icon={<Wallet className="h-5 w-5" />}
           color={stats.totalDelta > 0 ? 'text-orange-600' : 'text-emerald-600'}
           bgColor={stats.totalDelta > 0 ? 'bg-orange-50' : 'bg-emerald-50'}
           borderColor={stats.totalDelta > 0 ? 'border-orange-200' : 'border-emerald-100'}
@@ -117,7 +117,9 @@ export function EncaissementsKpiCards({
         <KpiCard
           title="Échéances non payées"
           value={String(stats.unpaidCount)}
-          subtitle={stats.unpaidCount > 0 ? 'En attente' : 'Toutes réglées'}
+          subtitle={stats.unpaidCount > 0
+            ? `${formatCurrency(stats.totalUnpaidAmount)} en attente`
+            : 'Toutes réglées'}
           icon={<Clock className="h-5 w-5" />}
           color={stats.unpaidCount > 0 ? 'text-orange-600' : 'text-slate-400'}
           bgColor={stats.unpaidCount > 0 ? 'bg-orange-50' : 'bg-slate-50'}

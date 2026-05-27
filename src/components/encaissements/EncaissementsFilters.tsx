@@ -90,6 +90,7 @@ export function EncaissementsFilters({ filters, onChange, mandataires, available
             <SelectItem value="all">Toutes les échéances</SelectItem>
             <SelectItem value="unpaid">Non payées</SelectItem>
             <SelectItem value="paid">Payées</SelectItem>
+            <SelectItem value="with_variance">Avec écart</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -201,6 +201,7 @@ export type EncaissementKpiStats = {
   totalDelta: number
   paidCount: number
   unpaidCount: number
+  totalUnpaidAmount: number
   totalVariance: number
   deferredCount: number
 }
@@ -209,7 +210,7 @@ export type EncaissementFilterState = {
   search: string
   mandataire: string
   monthKey: string
-  paymentStatus: 'all' | 'paid' | 'unpaid'
+  paymentStatus: 'all' | 'paid' | 'unpaid' | 'with_variance'
 }
 
 export type MonthlyRecap = {
