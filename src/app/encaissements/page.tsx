@@ -19,6 +19,7 @@ import { UnpaidDetailsModal } from '@/components/encaissements/UnpaidDetailsModa
 import { DeferPaymentModal } from '@/components/encaissements/DeferPaymentModal'
 import { EncaissementsKpiDetailsModal, EncaissementKpiType } from '@/components/encaissements/EncaissementsKpiDetailsModal'
 import { ExportEncaissementsButton } from '@/components/encaissements/ExportEncaissementsButton'
+import { ExportPdfButton } from '@/components/encaissements/ExportPdfButton'
 import { useToast } from '@/hooks/use-toast'
 import { Wallet, TableProperties, BarChart3 } from 'lucide-react'
 
@@ -238,6 +239,12 @@ export default function EncaissementsPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <ExportPdfButton
+                entries={kpiEntries}
+                monthLabel={selectedMonthLabel}
+                monthKey={filters.monthKey}
+                mandataireFilter={filters.mandataire || undefined}
+              />
               <ExportEncaissementsButton entries={filteredEntries} />
             </div>
           </div>
