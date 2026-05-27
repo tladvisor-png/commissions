@@ -62,6 +62,13 @@ const emptyForm = {
   ppPaymentFeesRate: '3',
 }
 
+function parseOptionalFeeRate(value: string, fallback = 3): number {
+  const trimmed = value.trim()
+  if (trimmed === '') return fallback
+  const parsed = parseFloat(trimmed)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
 export function CommissionForm({ open, onClose, onSave, initialData }: CommissionFormProps) {
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -118,6 +125,14 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
     if (form.isEligibleForSurcommission && (isNaN(rateVal) || rateVal < 0 || rateVal > 100)) {
       errs.rate = 'Le taux doit être compris entre 0 et 100'
     }
+    const puFeesVal = parseFloat(form.puEntryFeesRate)
+    const ppFeesVal = parseFloat(form.ppPaymentFeesRate)
+    if (form.puEntryFeesRate.trim() !== '' && (!Number.isFinite(puFeesVal) || puFeesVal < 0)) {
+      errs.puEntryFeesRate = 'Les frais PU doivent être positifs ou égaux à 0'
+    }
+    if (form.ppPaymentFeesRate.trim() !== '' && (!Number.isFinite(ppFeesVal) || ppFeesVal < 0)) {
+      errs.ppPaymentFeesRate = 'Les frais PP doivent être positifs ou égaux à 0'
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -139,8 +154,8 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
         isEligibleForSurcommission: form.isEligibleForSurcommission,
         surcommissionEligibilityRate: finalRate,
         contractType: form.contractType,
-        puEntryFeesRate: parseFloat(form.puEntryFeesRate) || 3,
-        ppPaymentFeesRate: parseFloat(form.ppPaymentFeesRate) || 3,
+        puEntryFeesRate: parseOptionalFeeRate(form.puEntryFeesRate),
+        ppPaymentFeesRate: parseOptionalFeeRate(form.ppPaymentFeesRate),
         comment: form.comment.trim() || undefined,
       })
       // Le parent ferme la modal en cas de succès
@@ -289,12 +304,13 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
                 <Input
                   type="number"
                   min="0"
-                  max="100"
-                  step="0.1"
+                  step="0.01"
                   placeholder="3"
                   value={form.puEntryFeesRate}
                   onChange={e => setForm(f => ({ ...f, puEntryFeesRate: e.target.value }))}
+                  className={errors.puEntryFeesRate ? 'border-red-400' : ''}
                 />
+                {errors.puEntryFeesRate && <p className="text-xs text-red-500">{errors.puEntryFeesRate}</p>}
                 <p className="text-xs text-violet-500">Frais nets : {netPuFeesRate.toFixed(2)} % (−0,5 % incompressible)</p>
               </div>
               <div className="space-y-1.5">
@@ -305,12 +321,13 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
                 <Input
                   type="number"
                   min="0"
-                  max="100"
-                  step="0.1"
+                  step="0.01"
                   placeholder="3"
                   value={form.ppPaymentFeesRate}
                   onChange={e => setForm(f => ({ ...f, ppPaymentFeesRate: e.target.value }))}
+                  className={errors.ppPaymentFeesRate ? 'border-red-400' : ''}
                 />
+                {errors.ppPaymentFeesRate && <p className="text-xs text-red-500">{errors.ppPaymentFeesRate}</p>}
               </div>
             </div>
             {showPreview && (

@@ -21,6 +21,13 @@ export function ImportButton({ onImport }: ImportButtonProps) {
     return 'ASSURANCE_VIE'
   }
 
+  function parseOptionalFeeRate(raw: string, fallback = 3): number {
+    const trimmed = raw.trim()
+    if (trimmed === '') return fallback
+    const parsed = parseFloat(trimmed.replace(',', '.'))
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
   function parseCSV(text: string): Omit<CommissionDeal, 'id' | 'createdAt' | 'updatedAt'>[] {
     const lines = text.split('\n').filter(l => l.trim())
     if (lines.length < 2) return []
@@ -53,10 +60,10 @@ export function ImportButton({ onImport }: ImportButtonProps) {
       const contractType = parseContractType(contractTypeRaw)
 
       const puFeesRaw = row['frais entrée pu'] || row['frais entree pu'] || row['frais d\'entrée pu'] || row["frais d'entree pu"] || ''
-      const puEntryFeesRate = puFeesRaw === '' ? 3 : (parseFloat(puFeesRaw.replace(',', '.')) || 3)
+      const puEntryFeesRate = parseOptionalFeeRate(puFeesRaw)
 
       const ppFeesRaw = row['frais versement pp'] || row['frais de versement pp'] || ''
-      const ppPaymentFeesRate = ppFeesRaw === '' ? 3 : (parseFloat(ppFeesRaw.replace(',', '.')) || 3)
+      const ppPaymentFeesRate = parseOptionalFeeRate(ppFeesRaw)
 
       results.push({
         effectiveDate,
