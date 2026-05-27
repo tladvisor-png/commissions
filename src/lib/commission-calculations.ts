@@ -335,7 +335,8 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
       const commissionMonthKey = calculated.monthM
       const initialPaymentMonthKey = addOneMonth(commissionMonthKey)
       const deferredMonths = mStatus?.deferredMonths ?? 0
-      const finalPaymentMonthKey = deferredMonths > 0 ? addNMonths(initialPaymentMonthKey, deferredMonths) : initialPaymentMonthKey
+      const finalPaymentMonthKey = addNMonths(initialPaymentMonthKey, deferredMonths)
+      const finalPaymentMonthLabel = formatMonthLabel(finalPaymentMonthKey)
       entries.push({
         id: `${deal.id}-M`,
         dealId: deal.id,
@@ -343,8 +344,10 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         commissionMonthLabel: formatMonthLabel(commissionMonthKey),
         initialPaymentMonthKey,
         initialPaymentMonthLabel: formatMonthLabel(initialPaymentMonthKey),
+        finalPaymentMonthKey,
+        finalPaymentMonthLabel,
         paymentMonthKey: finalPaymentMonthKey,
-        paymentMonthLabel: formatMonthLabel(finalPaymentMonthKey),
+        paymentMonthLabel: finalPaymentMonthLabel,
         paymentType: 'M',
         expectedAmount,
         isPaid,
@@ -365,8 +368,8 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         paymentComment: mStatus?.comment ?? null,
         contractType: deal.contractType,
         deferredMonths,
-        deferredToMonthKey: mStatus?.deferredToMonthKey ?? null,
-        deferredToMonthLabel: mStatus?.deferredToMonthLabel ?? null,
+        deferredToMonthKey: deferredMonths > 0 ? finalPaymentMonthKey : null,
+        deferredToMonthLabel: deferredMonths > 0 ? finalPaymentMonthLabel : null,
         deferredAt: mStatus?.deferredAt ?? null,
         deferredReason: mStatus?.deferredReason ?? null,
       })
@@ -380,7 +383,8 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
       const commissionMonthKey = calculated.monthMPlus1
       const initialPaymentMonthKey = addOneMonth(commissionMonthKey)
       const deferredMonths = mPlus1Status?.deferredMonths ?? 0
-      const finalPaymentMonthKey = deferredMonths > 0 ? addNMonths(initialPaymentMonthKey, deferredMonths) : initialPaymentMonthKey
+      const finalPaymentMonthKey = addNMonths(initialPaymentMonthKey, deferredMonths)
+      const finalPaymentMonthLabel = formatMonthLabel(finalPaymentMonthKey)
       entries.push({
         id: `${deal.id}-M_PLUS_1`,
         dealId: deal.id,
@@ -388,8 +392,10 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         commissionMonthLabel: formatMonthLabel(commissionMonthKey),
         initialPaymentMonthKey,
         initialPaymentMonthLabel: formatMonthLabel(initialPaymentMonthKey),
+        finalPaymentMonthKey,
+        finalPaymentMonthLabel,
         paymentMonthKey: finalPaymentMonthKey,
-        paymentMonthLabel: formatMonthLabel(finalPaymentMonthKey),
+        paymentMonthLabel: finalPaymentMonthLabel,
         paymentType: 'M_PLUS_1',
         expectedAmount,
         isPaid,
@@ -410,8 +416,8 @@ export function getEncaissementEntries(deals: CommissionDeal[]): EncaissementEnt
         paymentComment: mPlus1Status?.comment ?? null,
         contractType: deal.contractType,
         deferredMonths,
-        deferredToMonthKey: mPlus1Status?.deferredToMonthKey ?? null,
-        deferredToMonthLabel: mPlus1Status?.deferredToMonthLabel ?? null,
+        deferredToMonthKey: deferredMonths > 0 ? finalPaymentMonthKey : null,
+        deferredToMonthLabel: deferredMonths > 0 ? finalPaymentMonthLabel : null,
         deferredAt: mPlus1Status?.deferredAt ?? null,
         deferredReason: mPlus1Status?.deferredReason ?? null,
       })

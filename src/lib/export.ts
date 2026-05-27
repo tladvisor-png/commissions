@@ -470,6 +470,60 @@ export async function exportEncaissementsToExcel(entries: EncaissementEntry[]): 
   XLSX.writeFile(wb, fileName)
 }
 
+export async function exportReportsEncaissementsToExcel(entries: EncaissementEntry[]): Promise<void> {
+  const XLSX = await import('xlsx')
+
+  const headers = [
+    'Mois commission',
+    'Mois encaissement initial',
+    'Mois encaissement final',
+    'Client',
+    'Mandataire',
+    'Type contrat',
+    'Type échéance',
+    'Montant attendu',
+    'Payée',
+    'Date paiement',
+    'Montant payé',
+    'Reste',
+    'Nombre de mois reportés',
+    'Date du report',
+    'Raison du report',
+    'Instance',
+    'Contrat OK',
+  ]
+
+  const dataRows = entries.map(e => [
+    e.commissionMonthLabel,
+    e.initialPaymentMonthLabel,
+    e.finalPaymentMonthLabel,
+    e.clientName,
+    e.mandataireName,
+    e.contractType ? (CONTRACT_TYPE_LABELS[e.contractType] ?? e.contractType) : 'Assurance vie',
+    e.paymentType === 'M' ? 'M' : 'M+1',
+    e.expectedAmount,
+    e.isPaid ? 'Oui' : 'Non',
+    e.paidDate ?? '',
+    e.paidAmount ?? '',
+    e.isPaid ? Math.max(e.expectedAmount - (e.paidAmount ?? e.expectedAmount), 0) : e.expectedAmount,
+    e.deferredMonths,
+    e.deferredAt ? new Date(e.deferredAt).toLocaleDateString('fr-FR') : '',
+    e.deferredReason ?? '',
+    e.isInstance ? 'Oui' : 'Non',
+    e.isContractOk ? 'Oui' : 'Non',
+  ])
+
+  const wsData = [headers, ...dataRows]
+  const ws = XLSX.utils.aoa_to_sheet(wsData)
+  ws['!cols'] = headers.map((_, i) => ({ wch: i < 3 ? 22 : 16 }))
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Reports encaissements')
+
+  const fileName = `reports_encaissements_${format(new Date(), 'yyyy-MM-dd')}.xlsx`
+  XLSX.writeFile(wb, fileName)
+}
+
 export async function exportRecapToExcel(recaps: MonthlyRecap[]): Promise<void> {
   const XLSX = await import('xlsx')
 

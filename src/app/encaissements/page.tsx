@@ -20,8 +20,10 @@ import { DeferPaymentModal } from '@/components/encaissements/DeferPaymentModal'
 import { EncaissementsKpiDetailsModal, EncaissementKpiType } from '@/components/encaissements/EncaissementsKpiDetailsModal'
 import { ExportEncaissementsButton } from '@/components/encaissements/ExportEncaissementsButton'
 import { ExportPdfButton } from '@/components/encaissements/ExportPdfButton'
+import { DeferredReportsModal } from '@/components/encaissements/DeferredReportsModal'
 import { useToast } from '@/hooks/use-toast'
-import { Wallet, TableProperties, BarChart3 } from 'lucide-react'
+import { Wallet, TableProperties, BarChart3, CalendarClock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default function EncaissementsPage() {
   const [deals, setDeals] = useState<CommissionDeal[]>([])
@@ -29,6 +31,8 @@ export default function EncaissementsPage() {
   const [paymentModalEntry, setPaymentModalEntry] = useState<EncaissementEntry | null>(null)
   const [deferModalEntry, setDeferModalEntry] = useState<EncaissementEntry | null>(null)
   const [showUnpaidModal, setShowUnpaidModal] = useState(false)
+  const [showReportsModal, setShowReportsModal] = useState(false)
+  const [reportsModalMonthKey, setReportsModalMonthKey] = useState<string | undefined>(undefined)
   const [kpiModalType, setKpiModalType] = useState<EncaissementKpiType | null>(null)
   const { toast } = useToast()
 
@@ -112,6 +116,13 @@ export default function EncaissementsPage() {
 
   const kpiStats = useMemo(() => calculateEncaissementKpis(kpiEntries), [kpiEntries])
 
+  function openReportsModal(monthKey?: string) {
+    setReportsModalMonthKey(monthKey)
+    setKpiModalType(null)
+    setShowUnpaidModal(false)
+    setShowReportsModal(true)
+  }
+
   const unpaidEntries = useMemo(() => {
     return allEntries.filter(e => {
       if (!e.isPaid) {
@@ -145,6 +156,7 @@ export default function EncaissementsPage() {
   function handleMarkPaid(entry: EncaissementEntry) {
     setPaymentModalEntry(entry)
     setShowUnpaidModal(false)
+    setShowReportsModal(false)
     setKpiModalType(null)
   }
 
@@ -265,9 +277,20 @@ export default function EncaissementsPage() {
                 <span className="text-xs text-slate-400">— {selectedMonthLabel}</span>
               )}
             </div>
-            <p className="text-xs text-slate-400">
-              {kpiEntries.length} échéance{kpiEntries.length > 1 ? 's' : ''} sur ce mois
-            </p>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-orange-200 text-orange-700 hover:bg-orange-50"
+                onClick={() => openReportsModal()}
+              >
+                <CalendarClock className="h-4 w-4" />
+                Voir les reports
+              </Button>
+              <p className="text-xs text-slate-400">
+                {kpiEntries.length} échéance{kpiEntries.length > 1 ? 's' : ''} sur ce mois
+              </p>
+            </div>
           </div>
 
           <EncaissementsKpiCards
@@ -279,7 +302,7 @@ export default function EncaissementsPage() {
             onClickPaidCount={() => setKpiModalType('paid_count')}
             onClickUnpaidCount={() => setKpiModalType('unpaid_count')}
             onClickVariance={() => setKpiModalType('variance')}
-            onClickDeferred={() => setKpiModalType('deferred')}
+            onClickDeferred={() => openReportsModal(filters.monthKey || undefined)}
           />
         </section>
 
@@ -363,6 +386,17 @@ export default function EncaissementsPage() {
         onClose={() => setKpiModalType(null)}
         monthLabel={selectedMonthLabel}
         onMarkPaid={handleMarkPaid}
+      />
+
+      <DeferredReportsModal
+        entries={allEntries}
+        open={showReportsModal}
+        onClose={() => setShowReportsModal(false)}
+        currentMonthKey={currentMonthKey}
+        initialMonthKey={reportsModalMonthKey}
+        onMarkPaid={handleMarkPaid}
+        onCancelDeferral={handleCancelDeferral}
+        onViewDetails={handleEditPayment}
       />
     </div>
     </AuthGuard>

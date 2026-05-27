@@ -139,7 +139,7 @@ export function EncaissementsKpiCards({
         <KpiCard
           title="Échéances reportées"
           value={String(stats.deferredCount)}
-          subtitle={stats.deferredCount > 0 ? 'Décalées au mois suivant' : 'Aucun report'}
+          subtitle={stats.deferredCount > 0 ? 'Décalées par report' : 'Aucun report'}
           icon={<CalendarClock className="h-5 w-5" />}
           color={stats.deferredCount > 0 ? 'text-violet-600' : 'text-slate-400'}
           bgColor={stats.deferredCount > 0 ? 'bg-violet-50' : 'bg-slate-50'}

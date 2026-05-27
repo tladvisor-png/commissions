@@ -167,6 +167,8 @@ export type EncaissementEntry = {
   commissionMonthLabel: string
   initialPaymentMonthKey: string
   initialPaymentMonthLabel: string
+  finalPaymentMonthKey: string
+  finalPaymentMonthLabel: string
   paymentMonthKey: string
   paymentMonthLabel: string
   paymentType: 'M' | 'M_PLUS_1'
