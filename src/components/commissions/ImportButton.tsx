@@ -59,10 +59,10 @@ export function ImportButton({ onImport }: ImportButtonProps) {
       const contractTypeRaw = (row['type de contrat'] || row['type contrat'] || row['contracttype'] || '').trim()
       const contractType = parseContractType(contractTypeRaw)
 
-      const puFeesRaw = row['frais entrée pu'] || row['frais entree pu'] || row['frais d\'entrée pu'] || row["frais d'entree pu"] || ''
+      const puFeesRaw = row['frais entrée pu brut (%)'] || row['frais entrée pu brut'] || row['frais entree pu brut'] || row['frais entrée pu'] || row['frais entree pu'] || row['frais d\'entrée pu'] || row["frais d'entree pu"] || ''
       const puEntryFeesRate = parseOptionalFeeRate(puFeesRaw)
 
-      const ppFeesRaw = row['frais versement pp'] || row['frais de versement pp'] || ''
+      const ppFeesRaw = row['frais versement pp brut (%)'] || row['frais versement pp brut'] || row['frais de versement pp brut'] || row['frais versement pp'] || row['frais de versement pp'] || ''
       const ppPaymentFeesRate = parseOptionalFeeRate(ppFeesRaw)
 
       results.push({

@@ -63,6 +63,7 @@ export type CalculatedDeal = CommissionDeal & {
   effectivePuEntryFeesRate: number
   effectivePpPaymentFeesRate: number
   netEntryFeesRate: number
+  netPpPaymentFeesRate: number
   caPU: number
   caPP: number
   caTotal: number

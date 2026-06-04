@@ -32,6 +32,7 @@ import {
   getMonthMPlus1Label,
   calculatePuRevenue,
   calculatePpRevenue,
+  getNetFeeRate,
 } from '@/lib/commission-calculations'
 import { User, Calendar, Euro, MessageSquare, AlertTriangle, CheckCircle, Percent, FileText } from 'lucide-react'
 
@@ -174,9 +175,10 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
   const showUnepWarning = rate !== 100
 
   // CA Assentis — calcul temps réel
-  const puFeesRate = parseFloat(form.puEntryFeesRate) || 0
-  const ppFeesRate = parseFloat(form.ppPaymentFeesRate) || 0
-  const netPuFeesRate = Math.max(puFeesRate - 0.5, 0)
+  const puFeesRate = parseOptionalFeeRate(form.puEntryFeesRate, 0)
+  const ppFeesRate = parseOptionalFeeRate(form.ppPaymentFeesRate, 0)
+  const netPuFeesRate = getNetFeeRate(puFeesRate)
+  const netPpFeesRate = getNetFeeRate(ppFeesRate)
   const previewCaPU = calculatePuRevenue({ puAmount: pu, ppAmount: pp, puEntryFeesRate: puFeesRate, ppPaymentFeesRate: ppFeesRate } as Parameters<typeof calculatePuRevenue>[0])
   const previewCaPP = calculatePpRevenue({ puAmount: pu, ppAmount: pp, puEntryFeesRate: puFeesRate, ppPaymentFeesRate: ppFeesRate } as Parameters<typeof calculatePpRevenue>[0])
   const previewCaTotal = Math.round((previewCaPU + previewCaPP) * 100) / 100
@@ -299,7 +301,7 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-slate-700">
                   <Percent className="h-3.5 w-3.5" />
-                  Frais d'entrée PU (%)
+                  Frais d'entrée PU brut (%)
                 </Label>
                 <Input
                   type="number"
@@ -311,12 +313,11 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
                   className={errors.puEntryFeesRate ? 'border-red-400' : ''}
                 />
                 {errors.puEntryFeesRate && <p className="text-xs text-red-500">{errors.puEntryFeesRate}</p>}
-                <p className="text-xs text-violet-500">Frais nets : {netPuFeesRate.toFixed(2)} % (−0,5 % incompressible)</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-slate-700">
                   <Percent className="h-3.5 w-3.5" />
-                  Frais de versement PP (%)
+                  Frais de versement PP brut (%)
                 </Label>
                 <Input
                   type="number"
@@ -330,6 +331,9 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
                 {errors.ppPaymentFeesRate && <p className="text-xs text-red-500">{errors.ppPaymentFeesRate}</p>}
               </div>
             </div>
+            <p className="text-xs text-violet-500">
+              Frais nets après déduction UNEP : PU {netPuFeesRate.toFixed(2)} % / PP {netPpFeesRate.toFixed(2)} %
+            </p>
             {showPreview && (
               <div className="rounded-md bg-white border border-violet-200 p-3 space-y-1">
                 <p className="text-xs font-semibold text-violet-700 mb-2">CA Assentis</p>
@@ -347,7 +351,7 @@ export function CommissionForm({ open, onClose, onSave, initialData }: Commissio
                     <p className="font-bold text-violet-900 text-sm">{formatCurrency(previewCaTotal)}</p>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Les frais d'entrée PU sont diminués de 0,5 % d'incompressible.</p>
+                <p className="text-xs text-slate-400 mt-1">Les frais PU et PP sont diminués de 0,5 % d'incompressible UNEP.</p>
               </div>
             )}
           </div>

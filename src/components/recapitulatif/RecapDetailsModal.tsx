@@ -248,10 +248,10 @@ function CATable({ deals, isEstimated }: { deals: CalculatedDeal[]; isEstimated?
             {!isEstimated && (
               <>
                 <td className="px-3 py-2 whitespace-nowrap text-right text-slate-500">
-                  {deal.puAmount > 0 ? `${deal.effectivePuEntryFeesRate}%` : <span className="text-slate-300">—</span>}
+                  {deal.puAmount > 0 ? `${deal.effectivePuEntryFeesRate}% brut / ${deal.netEntryFeesRate.toFixed(2)}% net` : <span className="text-slate-300">—</span>}
                 </td>
                 <td className="px-3 py-2 whitespace-nowrap text-right text-slate-500">
-                  {deal.ppAmount > 0 ? `${deal.effectivePpPaymentFeesRate}%` : <span className="text-slate-300">—</span>}
+                  {deal.ppAmount > 0 ? `${deal.effectivePpPaymentFeesRate}% brut / ${deal.netPpPaymentFeesRate.toFixed(2)}% net` : <span className="text-slate-300">—</span>}
                 </td>
               </>
             )}

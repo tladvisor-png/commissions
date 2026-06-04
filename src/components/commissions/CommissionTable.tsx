@@ -152,9 +152,15 @@ export function CommissionTable({
     }),
     columnHelper.accessor('effectivePpPaymentFeesRate', {
       header: 'Frais PP',
-      cell: info => (
-        <span className="text-xs text-slate-600">{info.getValue()} %</span>
-      ),
+      cell: info => {
+        const row = info.row.original
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-slate-600">{info.getValue()} %</span>
+            <span className="text-[10px] text-slate-400">nets : {row.netPpPaymentFeesRate.toFixed(2)} %</span>
+          </div>
+        )
+      },
     }),
     columnHelper.accessor('surcommissionEligibilityRate', {
       header: 'Taux élig.',

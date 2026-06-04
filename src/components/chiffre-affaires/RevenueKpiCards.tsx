@@ -94,14 +94,14 @@ export function RevenueKpiCards({ kpis, onClickCard }: RevenueKpiCardsProps) {
         onClick={() => onClickCard('BEST_CONTRACT')}
       />
       <KpiCard
-        label="Frais moyens PU"
+        label="Frais bruts moyens PU"
         value={`${kpis.avgFeesPU.toFixed(2)} %`}
         icon={Percent}
         color="bg-cyan-50 border-cyan-200 text-cyan-900"
         onClick={() => onClickCard('AVG_FEES_PU')}
       />
       <KpiCard
-        label="Frais moyens PP"
+        label="Frais bruts moyens PP"
         value={`${kpis.avgFeesPP.toFixed(2)} %`}
         icon={Percent}
         color="bg-teal-50 border-teal-200 text-teal-900"

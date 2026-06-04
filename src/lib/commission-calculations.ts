@@ -118,10 +118,18 @@ export function getEffectivePpPaymentFeesRate(deal: CommissionDeal): number {
   return deal.ppPaymentFeesRate ?? 3
 }
 
+export function getNetFeeRate(grossRate: number): number {
+  return Math.max((grossRate ?? 0) - 0.5, 0)
+}
+
 /** Frais nets PU = max(frais saisis − 0,5 %, 0) */
 export function getNetEntryFeesRate(deal: CommissionDeal): number {
-  const raw = getEffectivePuEntryFeesRate(deal)
-  return Math.max(raw - 0.5, 0)
+  return getNetFeeRate(getEffectivePuEntryFeesRate(deal))
+}
+
+/** Frais nets PP = max(frais saisis − 0,5 %, 0) */
+export function getNetPpPaymentFeesRate(deal: CommissionDeal): number {
+  return getNetFeeRate(getEffectivePpPaymentFeesRate(deal))
 }
 
 /** CA PU = PU × frais nets / 100 */
@@ -131,11 +139,11 @@ export function calculatePuRevenue(deal: CommissionDeal): number {
   return Math.round(deal.puAmount * netRate / 100 * 100) / 100
 }
 
-/** CA PP = PP × frais versement / 100 × 36 × 0,88 */
+/** CA PP = PP × frais nets / 100 × 36 × 0,88 */
 export function calculatePpRevenue(deal: CommissionDeal): number {
   if ((deal.ppAmount ?? 0) <= 0) return 0
-  const rate = getEffectivePpPaymentFeesRate(deal)
-  return Math.round(deal.ppAmount * rate / 100 * 36 * 0.88 * 100) / 100
+  const netRate = getNetPpPaymentFeesRate(deal)
+  return Math.round(deal.ppAmount * netRate / 100 * 36 * 0.88 * 100) / 100
 }
 
 export function calculateTotalRevenue(deal: CommissionDeal): number {
@@ -172,6 +180,7 @@ export function calculateDeal(deal: CommissionDeal): CalculatedDeal {
   const effectivePuEntryFeesRate = getEffectivePuEntryFeesRate(deal)
   const effectivePpPaymentFeesRate = getEffectivePpPaymentFeesRate(deal)
   const netEntryFeesRate = getNetEntryFeesRate(deal)
+  const netPpPaymentFeesRate = getNetPpPaymentFeesRate(deal)
   const caPU = calculatePuRevenue(deal)
   const caPP = calculatePpRevenue(deal)
   return {
@@ -191,6 +200,7 @@ export function calculateDeal(deal: CommissionDeal): CalculatedDeal {
     effectivePuEntryFeesRate,
     effectivePpPaymentFeesRate,
     netEntryFeesRate,
+    netPpPaymentFeesRate,
     caPU,
     caPP,
     caTotal: Math.round((caPU + caPP) * 100) / 100,

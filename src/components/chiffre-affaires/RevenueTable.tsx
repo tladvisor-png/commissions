@@ -106,6 +106,10 @@ export function RevenueTable({ deals, onEdit }: RevenueTableProps) {
       header: 'Frais PP',
       cell: info => <span className="text-xs text-slate-600">{info.getValue()} %</span>,
     }),
+    columnHelper.accessor('netPpPaymentFeesRate', {
+      header: 'Nets PP',
+      cell: info => <span className="text-xs text-violet-600">{info.getValue().toFixed(2)} %</span>,
+    }),
     columnHelper.accessor('caPU', {
       header: 'CA PU',
       cell: info => info.getValue() > 0
