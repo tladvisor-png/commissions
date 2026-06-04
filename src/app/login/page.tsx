@@ -9,13 +9,11 @@ import { Label } from '@/components/ui/label'
 import { TrendingUp } from 'lucide-react'
 
 export default function LoginPage() {
-  const { user, loading, signIn, signUp } = useAuth()
+  const { user, loading, authError, signIn } = useAuth()
   const router = useRouter()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -24,22 +22,27 @@ export default function LoginPage() {
     }
   }, [loading, user, router])
 
+  useEffect(() => {
+    if (!loading && !user && authError) {
+      setError(authError)
+    }
+  }, [authError, loading, user])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setInfo('')
     setSubmitting(true)
     try {
-      if (mode === 'login') {
-        await signIn(email, password)
-        router.replace('/')
-      } else {
-        await signUp(email, password)
-        setInfo('Compte créé. Vérifiez votre email pour confirmer votre inscription, puis connectez-vous.')
-        setMode('login')
-      }
+      await signIn(email, password)
+      router.replace('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue')
+      if (err instanceof Error && err.message === "Configuration d'accès manquante") {
+        setError(err.message)
+      } else if (err instanceof Error && err.message === 'Accès non autorisé') {
+        setError(err.message)
+      } else {
+        setError('Identifiants incorrects ou accès non autorisé.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -70,24 +73,9 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-          {/* Tabs */}
-          <div className="flex rounded-lg bg-slate-100 p-1 mb-6">
-            <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === 'login' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'
-              }`}
-              onClick={() => { setMode('login'); setError(''); setInfo('') }}
-            >
-              Se connecter
-            </button>
-            <button
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                mode === 'register' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'
-              }`}
-              onClick={() => { setMode('register'); setError(''); setInfo('') }}
-            >
-              Créer un compte
-            </button>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-slate-900">Connexion sécurisée</h2>
+            <p className="text-sm text-slate-500 mt-1">Accès réservé aux utilisateurs autorisés</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -110,10 +98,9 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder={mode === 'register' ? 'Minimum 6 caractères' : '••••••••'}
+                placeholder="Mot de passe"
                 required
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                minLength={6}
+                autoComplete="current-password"
               />
             </div>
 
@@ -122,19 +109,14 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            {info && (
-              <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                {info}
-              </div>
-            )}
 
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting
-                ? 'Chargement...'
-                : mode === 'login'
-                ? 'Se connecter'
-                : 'Créer mon compte'}
+              {submitting ? 'Connexion...' : 'Se connecter'}
             </Button>
+
+            <p className="text-sm text-slate-500 text-center">
+              Si vous n’avez pas d’accès, contactez l’administrateur.
+            </p>
           </form>
         </div>
       </div>
