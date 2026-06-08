@@ -630,6 +630,53 @@ export function getMonthlyRecap(deals: CommissionDeal[]): MonthlyRecap[] {
 
 // ─── Fin Récapitulatif mensuel ────────────────────────────────────────────────
 
+// ─── KPI "Dont reports du mois précédent" ────────────────────────────────────
+
+export function getPreviousMonthReportEntries(
+  entries: EncaissementEntry[],
+  selectedMonthKey: string
+): EncaissementEntry[] {
+  const previousMonthKey = addNMonths(selectedMonthKey, -1)
+  return entries.filter(e =>
+    e.deferredMonths > 0 &&
+    e.initialPaymentMonthKey === previousMonthKey &&
+    e.finalPaymentMonthKey === selectedMonthKey
+  )
+}
+
+export function getPreviousMonthReportsTotal(
+  entries: EncaissementEntry[],
+  selectedMonthKey: string
+): number {
+  return getPreviousMonthReportEntries(entries, selectedMonthKey)
+    .reduce((s, e) => s + e.expectedAmount, 0)
+}
+
+export interface PrevMonthReportsKpis {
+  count: number
+  expectedTotal: number
+  paidTotal: number
+  remainingTotal: number
+}
+
+export function getPreviousMonthReportsKpis(
+  entries: EncaissementEntry[],
+  selectedMonthKey: string
+): PrevMonthReportsKpis {
+  const filtered = getPreviousMonthReportEntries(entries, selectedMonthKey)
+  const expectedTotal = filtered.reduce((s, e) => s + e.expectedAmount, 0)
+  const paidTotal = filtered
+    .filter(e => e.isPaid)
+    .reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
+  const remainingTotal = filtered.reduce((s, e) => {
+    if (!e.isPaid) return s + e.expectedAmount
+    if (e.paidAmount !== null && e.expectedAmount - e.paidAmount > 0.01)
+      return s + (e.expectedAmount - e.paidAmount)
+    return s
+  }, 0)
+  return { count: filtered.length, expectedTotal, paidTotal, remainingTotal }
+}
+
 export function getDealEncaissementStatus(
   deal: CommissionDeal
 ): 'non_encaissee' | 'partiellement_encaissee' | 'totalement_encaissee' {

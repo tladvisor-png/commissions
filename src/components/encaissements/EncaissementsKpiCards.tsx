@@ -3,7 +3,7 @@
 import { EncaissementKpiStats } from '@/types/commission'
 import { formatCurrency } from '@/lib/commission-calculations'
 import {
-  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet, ArrowLeftRight,
+  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet, ArrowLeftRight, CornerDownRight,
 } from 'lucide-react'
 
 interface EncaissementsKpiCardsProps {
@@ -16,9 +16,12 @@ interface EncaissementsKpiCardsProps {
   onClickVariance: () => void
   onClickDeferred: () => void
   onClickTransfers?: () => void
+  onClickPrevMonthReports?: () => void
   monthLabel: string
   transfersCount?: number
   transfersExpected?: number
+  prevMonthReportsCount?: number
+  prevMonthReportsTotal?: number
 }
 
 interface KpiCardProps {
@@ -63,9 +66,12 @@ export function EncaissementsKpiCards({
   onClickVariance,
   onClickDeferred,
   onClickTransfers,
+  onClickPrevMonthReports,
   monthLabel,
   transfersCount = 0,
   transfersExpected = 0,
+  prevMonthReportsCount = 0,
+  prevMonthReportsTotal = 0,
 }: EncaissementsKpiCardsProps) {
   const monthSubtitle = monthLabel ? `Sur ${monthLabel}` : 'Tous les mois'
   const deltaPercent = stats.totalExpected > 0
@@ -75,7 +81,7 @@ export function EncaissementsKpiCards({
   return (
     <div className="space-y-4">
       {/* Ligne 1 : montants */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Surcommissions attendues"
           value={formatCurrency(stats.totalExpected)}
@@ -85,6 +91,18 @@ export function EncaissementsKpiCards({
           bgColor="bg-blue-50"
           borderColor="border-blue-100"
           onClick={onClickExpected}
+        />
+        <KpiCard
+          title="Dont reports"
+          value={formatCurrency(prevMonthReportsTotal)}
+          subtitle={prevMonthReportsCount > 0
+            ? `${prevMonthReportsCount} report${prevMonthReportsCount > 1 ? 's' : ''} du mois précédent`
+            : 'Aucun report du mois précédent'}
+          icon={<CornerDownRight className="h-5 w-5" />}
+          color={prevMonthReportsCount > 0 ? 'text-violet-600' : 'text-slate-400'}
+          bgColor={prevMonthReportsCount > 0 ? 'bg-violet-50' : 'bg-slate-50'}
+          borderColor={prevMonthReportsCount > 0 ? 'border-violet-200' : 'border-slate-200'}
+          onClick={onClickPrevMonthReports ?? (() => {})}
         />
         <KpiCard
           title="Surcommissions payées"

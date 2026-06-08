@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { EncaissementEntry, CONTRACT_TYPE_LABELS } from '@/types/commission'
-import { formatCurrency } from '@/lib/commission-calculations'
+import { formatCurrency, getPreviousMonthReportEntries } from '@/lib/commission-calculations'
 import { exportEncaissementsToCSV, exportEncaissementsToExcel } from '@/lib/export'
 import {
   Dialog,
@@ -27,6 +27,7 @@ export type EncaissementKpiType =
   | 'variance'
   | 'deferred'
   | 'transfers'
+  | 'prev_month_reports'
 
 const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   expected: 'Surcommissions attendues',
@@ -37,6 +38,7 @@ const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   variance: 'Écarts de paiement',
   deferred: 'Échéances reportées',
   transfers: 'Transferts du mois',
+  prev_month_reports: 'Reports du mois précédent',
 }
 
 interface EncaissementsKpiDetailsModalProps {
@@ -45,6 +47,7 @@ interface EncaissementsKpiDetailsModalProps {
   open: boolean
   onClose: () => void
   monthLabel: string
+  monthKey?: string
   onMarkPaid?: (entry: EncaissementEntry) => void
 }
 
@@ -66,14 +69,11 @@ function StatusBadgeMini({ isInstance, isContractOk }: { isInstance: boolean; is
   )
 }
 
-function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[]): EncaissementEntry[] {
+function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[], monthKey?: string): EncaissementEntry[] {
   switch (type) {
     case 'expected': return entries
     case 'paid': return entries.filter(e => e.isPaid)
     case 'remaining_total':
-      // Toutes les échéances qui contribuent au reste à encaisser :
-      // - Non payées (leur montant attendu est entièrement restant)
-      // - Payées avec un écart positif (= sous-paiement, écart restant)
       return entries.filter(e =>
         !e.isPaid ||
         (e.isPaid && e.paidAmount !== null && e.expectedAmount - e.paidAmount > 0.01)
@@ -83,6 +83,8 @@ function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[]):
     case 'variance': return entries.filter(e => e.isPaid && e.paidAmount !== null && Math.abs(e.paidAmount - e.expectedAmount) > 0.01)
     case 'deferred': return entries.filter(e => e.deferredMonths > 0)
     case 'transfers': return entries.filter(e => e.contractType === 'TRANSFERT')
+    case 'prev_month_reports':
+      return monthKey ? getPreviousMonthReportEntries(entries, monthKey) : []
     default: return entries
   }
 }
@@ -475,6 +477,7 @@ export function EncaissementsKpiDetailsModal({
   open,
   onClose,
   monthLabel,
+  monthKey,
   onMarkPaid,
 }: EncaissementsKpiDetailsModalProps) {
   const [search, setSearch] = useState('')
@@ -482,8 +485,8 @@ export function EncaissementsKpiDetailsModal({
 
   const baseEntries = useMemo(() => {
     if (!kpiType) return []
-    return filterEntries(kpiType, entries)
-  }, [kpiType, entries])
+    return filterEntries(kpiType, entries, monthKey)
+  }, [kpiType, entries, monthKey])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return baseEntries

@@ -7,6 +7,7 @@ import {
   getEncaissementEntries,
   calculateEncaissementKpis,
   formatMonthLabel,
+  getPreviousMonthReportsKpis,
 } from '@/lib/commission-calculations'
 import { fetchDeals, updatePaymentStatus, deferPaymentToNextMonth, cancelPaymentDeferral } from '@/lib/deals-service'
 import { NavigationTabs } from '@/components/NavigationTabs'
@@ -125,6 +126,11 @@ export default function EncaissementsPage() {
     transferEntries.reduce((s, e) => s + e.expectedAmount, 0),
     [transferEntries]
   )
+
+  const prevMonthReportsKpis = useMemo(() => {
+    if (!filters.monthKey) return { count: 0, expectedTotal: 0, paidTotal: 0, remainingTotal: 0 }
+    return getPreviousMonthReportsKpis(kpiEntries, filters.monthKey)
+  }, [kpiEntries, filters.monthKey])
 
   function openReportsModal(monthKey?: string) {
     setReportsModalMonthKey(monthKey)
@@ -307,6 +313,7 @@ export default function EncaissementsPage() {
             stats={kpiStats}
             monthLabel={selectedMonthLabel}
             onClickExpected={() => setKpiModalType('expected')}
+            onClickPrevMonthReports={() => setKpiModalType('prev_month_reports')}
             onClickPaid={() => setKpiModalType('paid')}
             onClickDelta={() => setKpiModalType('remaining_total')}
             onClickPaidCount={() => setKpiModalType('paid_count')}
@@ -316,6 +323,8 @@ export default function EncaissementsPage() {
             onClickTransfers={() => setKpiModalType('transfers')}
             transfersCount={transfersCount}
             transfersExpected={transfersExpected}
+            prevMonthReportsCount={prevMonthReportsKpis.count}
+            prevMonthReportsTotal={prevMonthReportsKpis.expectedTotal}
           />
         </section>
 
@@ -398,6 +407,7 @@ export default function EncaissementsPage() {
         open={kpiModalType !== null}
         onClose={() => setKpiModalType(null)}
         monthLabel={selectedMonthLabel}
+        monthKey={filters.monthKey || undefined}
         onMarkPaid={handleMarkPaid}
       />
 
