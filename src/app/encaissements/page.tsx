@@ -116,6 +116,16 @@ export default function EncaissementsPage() {
 
   const kpiStats = useMemo(() => calculateEncaissementKpis(kpiEntries), [kpiEntries])
 
+  const transferEntries = useMemo(() =>
+    kpiEntries.filter(e => e.contractType === 'TRANSFERT'),
+    [kpiEntries]
+  )
+  const transfersCount = transferEntries.length
+  const transfersExpected = useMemo(() =>
+    transferEntries.reduce((s, e) => s + e.expectedAmount, 0),
+    [transferEntries]
+  )
+
   function openReportsModal(monthKey?: string) {
     setReportsModalMonthKey(monthKey)
     setKpiModalType(null)
@@ -303,6 +313,9 @@ export default function EncaissementsPage() {
             onClickUnpaidCount={() => setKpiModalType('unpaid_count')}
             onClickVariance={() => setKpiModalType('variance')}
             onClickDeferred={() => openReportsModal(filters.monthKey || undefined)}
+            onClickTransfers={() => setKpiModalType('transfers')}
+            transfersCount={transfersCount}
+            transfersExpected={transfersExpected}
           />
         </section>
 

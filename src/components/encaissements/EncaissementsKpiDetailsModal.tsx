@@ -26,6 +26,7 @@ export type EncaissementKpiType =
   | 'unpaid_count'
   | 'variance'
   | 'deferred'
+  | 'transfers'
 
 const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   expected: 'Surcommissions attendues',
@@ -35,6 +36,7 @@ const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   unpaid_count: 'Échéances non payées',
   variance: 'Écarts de paiement',
   deferred: 'Échéances reportées',
+  transfers: 'Transferts du mois',
 }
 
 interface EncaissementsKpiDetailsModalProps {
@@ -80,6 +82,7 @@ function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[]):
     case 'unpaid_count': return entries.filter(e => !e.isPaid)
     case 'variance': return entries.filter(e => e.isPaid && e.paidAmount !== null && Math.abs(e.paidAmount - e.expectedAmount) > 0.01)
     case 'deferred': return entries.filter(e => e.deferredMonths > 0)
+    case 'transfers': return entries.filter(e => e.contractType === 'TRANSFERT')
     default: return entries
   }
 }

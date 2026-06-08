@@ -3,7 +3,7 @@
 import { EncaissementKpiStats } from '@/types/commission'
 import { formatCurrency } from '@/lib/commission-calculations'
 import {
-  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet,
+  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet, ArrowLeftRight,
 } from 'lucide-react'
 
 interface EncaissementsKpiCardsProps {
@@ -15,7 +15,10 @@ interface EncaissementsKpiCardsProps {
   onClickUnpaidCount: () => void
   onClickVariance: () => void
   onClickDeferred: () => void
+  onClickTransfers?: () => void
   monthLabel: string
+  transfersCount?: number
+  transfersExpected?: number
 }
 
 interface KpiCardProps {
@@ -59,7 +62,10 @@ export function EncaissementsKpiCards({
   onClickUnpaidCount,
   onClickVariance,
   onClickDeferred,
+  onClickTransfers,
   monthLabel,
+  transfersCount = 0,
+  transfersExpected = 0,
 }: EncaissementsKpiCardsProps) {
   const monthSubtitle = monthLabel ? `Sur ${monthLabel}` : 'Tous les mois'
   const deltaPercent = stats.totalExpected > 0
@@ -101,6 +107,22 @@ export function EncaissementsKpiCards({
           onClick={onClickDelta}
         />
       </div>
+
+      {/* Ligne 1b : transferts */}
+      {onClickTransfers && (
+        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 max-w-xs">
+          <KpiCard
+            title="Transferts du mois"
+            value={String(transfersCount)}
+            subtitle={transfersCount > 0 ? `Attendu : ${formatCurrency(transfersExpected)}` : 'Aucun transfert'}
+            icon={<ArrowLeftRight className="h-5 w-5" />}
+            color={transfersCount > 0 ? 'text-cyan-600' : 'text-slate-400'}
+            bgColor={transfersCount > 0 ? 'bg-cyan-50' : 'bg-slate-50'}
+            borderColor={transfersCount > 0 ? 'border-cyan-100' : 'border-slate-200'}
+            onClick={onClickTransfers}
+          />
+        </div>
+      )}
 
       {/* Ligne 2 : compteurs + écarts */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

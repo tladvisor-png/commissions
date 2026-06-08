@@ -29,6 +29,7 @@ import { CommissionForm } from '@/components/commissions/CommissionForm'
 import { CommissionFilters } from '@/components/commissions/CommissionFilters'
 import { ExportButton } from '@/components/commissions/ExportButton'
 import { ImportButton } from '@/components/commissions/ImportButton'
+import { CrmImportButton } from '@/components/commissions/CrmImportButton'
 import { NavigationTabs } from '@/components/NavigationTabs'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
@@ -378,6 +379,10 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
+              <CrmImportButton
+                existingDeals={deals}
+                onImport={newDeals => setDeals(prev => [...prev, ...newDeals])}
+              />
               <ImportButton onImport={handleImport} />
               <ExportButton deals={filteredDeals} />
               <Button

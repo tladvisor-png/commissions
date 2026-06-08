@@ -310,6 +310,7 @@ export function getDealsForKpi(type: KpiCardType, deals: CalculatedDeal[]): Calc
     case 'TOTAL_PP': return deals.filter(d => d.ppAmount > 0)
     case 'SURCOMM_M': return deals.filter(d => d.payAtM > 0)
     case 'SURCOMM_M_PLUS_1': return deals.filter(d => d.payAtMPlus1 > 0)
+    case 'TRANSFERTS': return deals.filter(d => d.contractType === 'TRANSFERT')
     default: return deals
   }
 }

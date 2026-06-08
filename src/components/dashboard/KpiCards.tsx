@@ -7,7 +7,7 @@ import { KpiDetailsModal } from './KpiDetailsModal'
 import {
   TrendingUp, TrendingDown, BarChart3, AlertTriangle,
   CheckCircle, Clock, Briefcase, Calendar, CalendarCheck, CalendarClock,
-  MessageSquare, TrendingDown as TrendingDownIcon,
+  MessageSquare, TrendingDown as TrendingDownIcon, ArrowLeftRight,
 } from 'lucide-react'
 
 interface KpiCardsProps {
@@ -170,6 +170,23 @@ export function KpiCards({ stats, deals }: KpiCardsProps) {
     },
   ]
 
+  const transferDeals = deals.filter(d => d.contractType === 'TRANSFERT')
+  const transferCount = transferDeals.length
+  const transferPU = transferDeals.reduce((s, d) => s + d.puAmount, 0)
+
+  const transferCards: KpiCardDef[] = [
+    {
+      title: 'Transferts',
+      value: String(transferCount),
+      subtitle: transferCount > 0 ? `PU : ${formatCurrency(transferPU)}` : 'Aucun transfert',
+      icon: <ArrowLeftRight className="h-5 w-5" />,
+      color: transferCount > 0 ? 'text-cyan-600' : 'text-slate-400',
+      bgColor: transferCount > 0 ? 'bg-cyan-50' : 'bg-slate-50',
+      borderColor: transferCount > 0 ? 'border-cyan-100' : 'border-slate-200',
+      kpiType: 'TRANSFERTS',
+    },
+  ]
+
   const unepCards: KpiCardDef[] = [
     {
       title: 'Affaires à négocier UNEP',
@@ -226,8 +243,8 @@ export function KpiCards({ stats, deals }: KpiCardsProps) {
             />
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {unepCards.map((card, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...transferCards, ...unepCards].map((card, i) => (
             <KpiCard
               key={i}
               title={card.title}

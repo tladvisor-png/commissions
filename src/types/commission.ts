@@ -105,6 +105,7 @@ export type KpiCardType =
   | 'TOTAL_PP'
   | 'SURCOMM_M'
   | 'SURCOMM_M_PLUS_1'
+  | 'TRANSFERTS'
 
 export type PaymentEntry = {
   monthKey: string
