@@ -28,6 +28,8 @@ export type EncaissementKpiType =
   | 'deferred'
   | 'transfers'
   | 'prev_month_reports'
+  | 'payment_m'
+  | 'payment_m_plus_1'
 
 const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   expected: 'Surcommissions attendues',
@@ -39,6 +41,8 @@ const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   deferred: 'Échéances reportées',
   transfers: 'Transferts du mois',
   prev_month_reports: 'Reports du mois précédent',
+  payment_m: 'Échéances à payer M',
+  payment_m_plus_1: 'Échéances à payer M+1',
 }
 
 interface EncaissementsKpiDetailsModalProps {
@@ -85,6 +89,8 @@ function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[], 
     case 'transfers': return entries.filter(e => e.contractType === 'TRANSFERT')
     case 'prev_month_reports':
       return monthKey ? getPreviousMonthReportEntries(entries, monthKey) : []
+    case 'payment_m': return entries.filter(e => e.paymentType === 'M')
+    case 'payment_m_plus_1': return entries.filter(e => e.paymentType === 'M_PLUS_1')
     default: return entries
   }
 }

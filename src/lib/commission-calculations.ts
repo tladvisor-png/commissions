@@ -630,6 +630,33 @@ export function getMonthlyRecap(deals: CommissionDeal[]): MonthlyRecap[] {
 
 // ─── Fin Récapitulatif mensuel ────────────────────────────────────────────────
 
+// ─── KPI "À payer M" / "À payer M+1" ────────────────────────────────────────
+
+export interface PaymentTypeKpis {
+  count: number
+  expectedTotal: number
+  paidTotal: number
+  remainingTotal: number
+}
+
+export function getPaymentTypeKpis(
+  entries: EncaissementEntry[],
+  paymentType: 'M' | 'M_PLUS_1'
+): PaymentTypeKpis {
+  const filtered = entries.filter(e => e.paymentType === paymentType)
+  const expectedTotal = filtered.reduce((s, e) => s + e.expectedAmount, 0)
+  const paidTotal = filtered
+    .filter(e => e.isPaid)
+    .reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
+  const remainingTotal = filtered.reduce((s, e) => {
+    if (!e.isPaid) return s + e.expectedAmount
+    if (e.paidAmount !== null && e.expectedAmount - e.paidAmount > 0.01)
+      return s + (e.expectedAmount - e.paidAmount)
+    return s
+  }, 0)
+  return { count: filtered.length, expectedTotal, paidTotal, remainingTotal }
+}
+
 // ─── KPI "Dont reports du mois précédent" ────────────────────────────────────
 
 export function getPreviousMonthReportEntries(

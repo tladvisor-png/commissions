@@ -3,7 +3,7 @@
 import { EncaissementKpiStats } from '@/types/commission'
 import { formatCurrency } from '@/lib/commission-calculations'
 import {
-  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet, ArrowLeftRight, CornerDownRight,
+  TrendingDown, CheckCircle, CreditCard, Clock, Scale, CalendarClock, Wallet, ArrowLeftRight, CornerDownRight, Banknote, CalendarDays,
 } from 'lucide-react'
 
 interface EncaissementsKpiCardsProps {
@@ -17,11 +17,17 @@ interface EncaissementsKpiCardsProps {
   onClickDeferred: () => void
   onClickTransfers?: () => void
   onClickPrevMonthReports?: () => void
+  onClickPaymentM?: () => void
+  onClickPaymentMPlus1?: () => void
   monthLabel: string
   transfersCount?: number
   transfersExpected?: number
   prevMonthReportsCount?: number
   prevMonthReportsTotal?: number
+  paymentMTotal?: number
+  paymentMCount?: number
+  paymentMPlus1Total?: number
+  paymentMPlus1Count?: number
 }
 
 interface KpiCardProps {
@@ -67,11 +73,17 @@ export function EncaissementsKpiCards({
   onClickDeferred,
   onClickTransfers,
   onClickPrevMonthReports,
+  onClickPaymentM,
+  onClickPaymentMPlus1,
   monthLabel,
   transfersCount = 0,
   transfersExpected = 0,
   prevMonthReportsCount = 0,
   prevMonthReportsTotal = 0,
+  paymentMTotal = 0,
+  paymentMCount = 0,
+  paymentMPlus1Total = 0,
+  paymentMPlus1Count = 0,
 }: EncaissementsKpiCardsProps) {
   const monthSubtitle = monthLabel ? `Sur ${monthLabel}` : 'Tous les mois'
   const deltaPercent = stats.totalExpected > 0
@@ -126,9 +138,29 @@ export function EncaissementsKpiCards({
         />
       </div>
 
-      {/* Ligne 1b : transferts */}
-      {onClickTransfers && (
-        <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 max-w-xs">
+      {/* Ligne 2 : ventilation M / M+1 / Transferts */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KpiCard
+          title="À payer M"
+          value={formatCurrency(paymentMTotal)}
+          subtitle={`${paymentMCount} échéance${paymentMCount !== 1 ? 's' : ''} M du mois`}
+          icon={<Banknote className="h-5 w-5" />}
+          color={paymentMCount > 0 ? 'text-sky-600' : 'text-slate-400'}
+          bgColor={paymentMCount > 0 ? 'bg-sky-50' : 'bg-slate-50'}
+          borderColor={paymentMCount > 0 ? 'border-sky-200' : 'border-slate-200'}
+          onClick={onClickPaymentM ?? (() => {})}
+        />
+        <KpiCard
+          title="À payer M+1"
+          value={formatCurrency(paymentMPlus1Total)}
+          subtitle={`${paymentMPlus1Count} échéance${paymentMPlus1Count !== 1 ? 's' : ''} M+1 du mois`}
+          icon={<CalendarDays className="h-5 w-5" />}
+          color={paymentMPlus1Count > 0 ? 'text-indigo-600' : 'text-slate-400'}
+          bgColor={paymentMPlus1Count > 0 ? 'bg-indigo-50' : 'bg-slate-50'}
+          borderColor={paymentMPlus1Count > 0 ? 'border-indigo-200' : 'border-slate-200'}
+          onClick={onClickPaymentMPlus1 ?? (() => {})}
+        />
+        {onClickTransfers ? (
           <KpiCard
             title="Transferts du mois"
             value={String(transfersCount)}
@@ -139,8 +171,8 @@ export function EncaissementsKpiCards({
             borderColor={transfersCount > 0 ? 'border-cyan-100' : 'border-slate-200'}
             onClick={onClickTransfers}
           />
-        </div>
-      )}
+        ) : <div />}
+      </div>
 
       {/* Ligne 2 : compteurs + écarts */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
