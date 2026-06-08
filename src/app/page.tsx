@@ -58,6 +58,7 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [paginationResetKey, setPaginationResetKey] = useState(0)
   const [localStorageCount, setLocalStorageCount] = useState(0)
   const [showMigrateConfirm, setShowMigrateConfirm] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
@@ -468,7 +469,7 @@ export default function Home() {
 
             <CommissionFilters
               filters={filters}
-              onChange={setFilters}
+              onChange={newFilters => { setFilters(newFilters); setPaginationResetKey(k => k + 1) }}
               mandataires={mandataires}
               months={months}
               monthLabel={formatMonthLabel}
@@ -485,6 +486,7 @@ export default function Home() {
               onToggleContractOk={handleToggleContractOk}
               onDeferToEndOfMonth={handleDeferToEndOfMonth}
               onBulkDelete={handleBulkDelete}
+              pageResetSignal={paginationResetKey}
             />
           </div>
         </section>

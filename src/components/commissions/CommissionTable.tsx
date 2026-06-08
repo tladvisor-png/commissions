@@ -10,6 +10,7 @@ import {
   createColumnHelper,
   SortingState,
   RowSelectionState,
+  PaginationState,
 } from '@tanstack/react-table'
 import { CalculatedDeal, CONTRACT_TYPE_LABELS } from '@/types/commission'
 import { formatCurrency, getRowClassName, formatMonthLabel } from '@/lib/commission-calculations'
@@ -32,6 +33,7 @@ interface CommissionTableProps {
   onToggleContractOk: (id: string, value: boolean) => void
   onDeferToEndOfMonth: (ids: string[], value: boolean) => void
   onBulkDelete: (ids: string[]) => void
+  pageResetSignal?: number
 }
 
 const columnHelper = createColumnHelper<CalculatedDeal>()
@@ -70,11 +72,25 @@ function IndeterminateCheckbox({
 
 export function CommissionTable({
   deals, onEdit, onDelete, onDuplicate, onToggleInstance, onToggleContractOk,
-  onDeferToEndOfMonth, onBulkDelete,
+  onDeferToEndOfMonth, onBulkDelete, pageResetSignal,
 }: CommissionTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'effectiveDate', desc: true }])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 20 })
+
+  // Reset to page 0 only when filters change (not when a row is toggled)
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, pageIndex: 0 }))
+  }, [pageResetSignal])
+
+  // Clamp page index if data shrinks (e.g. after bulk delete)
+  useEffect(() => {
+    const totalPages = Math.ceil(deals.length / pagination.pageSize)
+    if (totalPages > 0 && pagination.pageIndex >= totalPages) {
+      setPagination(prev => ({ ...prev, pageIndex: totalPages - 1 }))
+    }
+  }, [deals.length, pagination.pageIndex, pagination.pageSize])
 
   // Reset selection when deals list changes
   useEffect(() => {
@@ -381,14 +397,15 @@ export function CommissionTable({
   const table = useReactTable({
     data: deals,
     columns,
-    state: { sorting, rowSelection },
+    state: { sorting, rowSelection, pagination },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 20 } },
   })
 
   const selectedIds = table.getSelectedRowModel().rows.map(r => r.original.id)
