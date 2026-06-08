@@ -630,31 +630,100 @@ export function getMonthlyRecap(deals: CommissionDeal[]): MonthlyRecap[] {
 
 // ─── Fin Récapitulatif mensuel ────────────────────────────────────────────────
 
-// ─── KPI "À payer M" / "À payer M+1" ────────────────────────────────────────
+// ─── Décomposition des surcommissions attendues ──────────────────────────────
 
-export interface PaymentTypeKpis {
-  count: number
-  expectedTotal: number
-  paidTotal: number
-  remainingTotal: number
+export type ExpectedPaymentCategory =
+  | 'production_m'
+  | 'production_m_plus_1'
+  | 'report_previous_month'
+  | 'report_older'
+  | 'other'
+
+export function classifyExpectedPaymentEntry(
+  entry: EncaissementEntry,
+  selectedMonthKey: string
+): ExpectedPaymentCategory {
+  const previousMonthKey = addNMonths(selectedMonthKey, -1)
+  if (entry.deferredMonths > 0) {
+    return entry.initialPaymentMonthKey === previousMonthKey
+      ? 'report_previous_month'
+      : 'report_older'
+  }
+  if (entry.paymentType === 'M_PLUS_1') return 'production_m_plus_1'
+  if (entry.paymentType === 'M') return 'production_m'
+  return 'other'
 }
 
-export function getPaymentTypeKpis(
+export interface BreakdownGroup {
+  entries: EncaissementEntry[]
+  total: number
+  count: number
+}
+
+export interface ExpectedPaymentBreakdown {
+  productionM: BreakdownGroup
+  productionMPlus1: BreakdownGroup
+  reportsPreviousMonth: BreakdownGroup
+  reportsOlder: BreakdownGroup
+  other: BreakdownGroup
+  transfers: BreakdownGroup
+  controlTotal: number
+  expectedTotal: number
+  controlDelta: number
+}
+
+function toGroup(arr: EncaissementEntry[]): BreakdownGroup {
+  return {
+    entries: arr,
+    total: arr.reduce((s, e) => s + e.expectedAmount, 0),
+    count: arr.length,
+  }
+}
+
+export function getExpectedPaymentBreakdown(
   entries: EncaissementEntry[],
-  paymentType: 'M' | 'M_PLUS_1'
-): PaymentTypeKpis {
-  const filtered = entries.filter(e => e.paymentType === paymentType)
-  const expectedTotal = filtered.reduce((s, e) => s + e.expectedAmount, 0)
-  const paidTotal = filtered
-    .filter(e => e.isPaid)
-    .reduce((s, e) => s + (e.paidAmount ?? e.expectedAmount), 0)
-  const remainingTotal = filtered.reduce((s, e) => {
-    if (!e.isPaid) return s + e.expectedAmount
-    if (e.paidAmount !== null && e.expectedAmount - e.paidAmount > 0.01)
-      return s + (e.expectedAmount - e.paidAmount)
-    return s
-  }, 0)
-  return { count: filtered.length, expectedTotal, paidTotal, remainingTotal }
+  selectedMonthKey: string
+): ExpectedPaymentBreakdown {
+  const buckets: Record<ExpectedPaymentCategory, EncaissementEntry[]> = {
+    production_m: [],
+    production_m_plus_1: [],
+    report_previous_month: [],
+    report_older: [],
+    other: [],
+  }
+
+  for (const e of entries) {
+    buckets[classifyExpectedPaymentEntry(e, selectedMonthKey)].push(e)
+  }
+
+  const productionM = toGroup(buckets.production_m)
+  const productionMPlus1 = toGroup(buckets.production_m_plus_1)
+  const reportsPreviousMonth = toGroup(buckets.report_previous_month)
+  const reportsOlder = toGroup(buckets.report_older)
+  const other = toGroup(buckets.other)
+  const transfers = toGroup(entries.filter(e => e.contractType === 'TRANSFERT'))
+
+  const controlTotal =
+    productionM.total +
+    productionMPlus1.total +
+    reportsPreviousMonth.total +
+    reportsOlder.total +
+    other.total
+
+  const expectedTotal = entries.reduce((s, e) => s + e.expectedAmount, 0)
+  const controlDelta = Math.round(Math.abs(expectedTotal - controlTotal) * 100) / 100
+
+  return {
+    productionM,
+    productionMPlus1,
+    reportsPreviousMonth,
+    reportsOlder,
+    other,
+    transfers,
+    controlTotal,
+    expectedTotal,
+    controlDelta,
+  }
 }
 
 // ─── KPI "Dont reports du mois précédent" ────────────────────────────────────

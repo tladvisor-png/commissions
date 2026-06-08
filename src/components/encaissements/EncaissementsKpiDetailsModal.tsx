@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { EncaissementEntry, CONTRACT_TYPE_LABELS } from '@/types/commission'
-import { formatCurrency, getPreviousMonthReportEntries } from '@/lib/commission-calculations'
+import { formatCurrency, getPreviousMonthReportEntries, classifyExpectedPaymentEntry } from '@/lib/commission-calculations'
 import { exportEncaissementsToCSV, exportEncaissementsToExcel } from '@/lib/export'
 import {
   Dialog,
@@ -28,8 +28,10 @@ export type EncaissementKpiType =
   | 'deferred'
   | 'transfers'
   | 'prev_month_reports'
-  | 'payment_m'
-  | 'payment_m_plus_1'
+  | 'breakdown_production_m'
+  | 'breakdown_production_m_plus_1'
+  | 'breakdown_reports_older'
+  | 'breakdown_other'
 
 const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   expected: 'Surcommissions attendues',
@@ -39,10 +41,12 @@ const MODAL_TITLES: Record<EncaissementKpiType, string> = {
   unpaid_count: 'Échéances non payées',
   variance: 'Écarts de paiement',
   deferred: 'Échéances reportées',
-  transfers: 'Transferts du mois',
+  transfers: 'Dont transferts',
   prev_month_reports: 'Reports du mois précédent',
-  payment_m: 'Échéances à payer M',
-  payment_m_plus_1: 'Échéances à payer M+1',
+  breakdown_production_m: 'Production M',
+  breakdown_production_m_plus_1: 'Production M+1',
+  breakdown_reports_older: 'Reports antérieurs',
+  breakdown_other: 'Autres échéances',
 }
 
 interface EncaissementsKpiDetailsModalProps {
@@ -89,8 +93,22 @@ function filterEntries(type: EncaissementKpiType, entries: EncaissementEntry[], 
     case 'transfers': return entries.filter(e => e.contractType === 'TRANSFERT')
     case 'prev_month_reports':
       return monthKey ? getPreviousMonthReportEntries(entries, monthKey) : []
-    case 'payment_m': return entries.filter(e => e.paymentType === 'M')
-    case 'payment_m_plus_1': return entries.filter(e => e.paymentType === 'M_PLUS_1')
+    case 'breakdown_production_m':
+      return monthKey
+        ? entries.filter(e => classifyExpectedPaymentEntry(e, monthKey) === 'production_m')
+        : entries.filter(e => e.deferredMonths === 0 && e.paymentType === 'M')
+    case 'breakdown_production_m_plus_1':
+      return monthKey
+        ? entries.filter(e => classifyExpectedPaymentEntry(e, monthKey) === 'production_m_plus_1')
+        : entries.filter(e => e.deferredMonths === 0 && e.paymentType === 'M_PLUS_1')
+    case 'breakdown_reports_older':
+      return monthKey
+        ? entries.filter(e => classifyExpectedPaymentEntry(e, monthKey) === 'report_older')
+        : []
+    case 'breakdown_other':
+      return monthKey
+        ? entries.filter(e => classifyExpectedPaymentEntry(e, monthKey) === 'other')
+        : []
     default: return entries
   }
 }

@@ -8,7 +8,7 @@ import {
   calculateEncaissementKpis,
   formatMonthLabel,
   getPreviousMonthReportsKpis,
-  getPaymentTypeKpis,
+  getExpectedPaymentBreakdown,
 } from '@/lib/commission-calculations'
 import { fetchDeals, updatePaymentStatus, deferPaymentToNextMonth, cancelPaymentDeferral } from '@/lib/deals-service'
 import { NavigationTabs } from '@/components/NavigationTabs'
@@ -133,8 +133,16 @@ export default function EncaissementsPage() {
     return getPreviousMonthReportsKpis(kpiEntries, filters.monthKey)
   }, [kpiEntries, filters.monthKey])
 
-  const paymentMKpis = useMemo(() => getPaymentTypeKpis(kpiEntries, 'M'), [kpiEntries])
-  const paymentMPlus1Kpis = useMemo(() => getPaymentTypeKpis(kpiEntries, 'M_PLUS_1'), [kpiEntries])
+  const breakdown = useMemo(() => {
+    const empty = { entries: [], total: 0, count: 0 }
+    if (!filters.monthKey) return {
+      productionM: empty, productionMPlus1: empty,
+      reportsPreviousMonth: empty, reportsOlder: empty,
+      other: empty, transfers: empty,
+      controlTotal: 0, expectedTotal: 0, controlDelta: 0,
+    }
+    return getExpectedPaymentBreakdown(kpiEntries, filters.monthKey)
+  }, [kpiEntries, filters.monthKey])
 
   function openReportsModal(monthKey?: string) {
     setReportsModalMonthKey(monthKey)
@@ -325,16 +333,20 @@ export default function EncaissementsPage() {
             onClickVariance={() => setKpiModalType('variance')}
             onClickDeferred={() => openReportsModal(filters.monthKey || undefined)}
             onClickTransfers={() => setKpiModalType('transfers')}
-            onClickPaymentM={() => setKpiModalType('payment_m')}
-            onClickPaymentMPlus1={() => setKpiModalType('payment_m_plus_1')}
+            onClickBreakdownProductionM={() => setKpiModalType('breakdown_production_m')}
+            onClickBreakdownProductionMPlus1={() => setKpiModalType('breakdown_production_m_plus_1')}
+            onClickBreakdownReportsOlder={() => setKpiModalType('breakdown_reports_older')}
             transfersCount={transfersCount}
             transfersExpected={transfersExpected}
             prevMonthReportsCount={prevMonthReportsKpis.count}
             prevMonthReportsTotal={prevMonthReportsKpis.expectedTotal}
-            paymentMTotal={paymentMKpis.expectedTotal}
-            paymentMCount={paymentMKpis.count}
-            paymentMPlus1Total={paymentMPlus1Kpis.expectedTotal}
-            paymentMPlus1Count={paymentMPlus1Kpis.count}
+            breakdownProductionMTotal={breakdown.productionM.total}
+            breakdownProductionMCount={breakdown.productionM.count}
+            breakdownProductionMPlus1Total={breakdown.productionMPlus1.total}
+            breakdownProductionMPlus1Count={breakdown.productionMPlus1.count}
+            breakdownReportsOlderTotal={breakdown.reportsOlder.total}
+            breakdownReportsOlderCount={breakdown.reportsOlder.count}
+            breakdownControlDelta={breakdown.controlDelta}
           />
         </section>
 
